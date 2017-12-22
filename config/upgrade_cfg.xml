@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<version_info>1.0.0.2</version_info>     <!-- 版本信息 -->
+  <file0>
+	<valid>1</valid>                         <!-- 是否升级此分区 -->
+    <name>uboot_hi18ev200_1.0.3.0.bin</name> <!-- 文件名 -->
+    <partition>/dev/mtd0</partition>         <!-- 分区设备节点 -->
+	<type>uboot</type>                       <!-- 文件名 -->
+    <length>175512</length>                  <!-- 文件长度，单位字节 -->
+	<md5>e98c0534fe47ef0b09b70626c0ca1d15</md5> <!-- 文件md5值 -->
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/uboot_hi18ev200_1.0.3.0.bin</downloadUrl> <!-- 文件下载地址 -->
+  </file0>
+  <file1>
+	<valid>1</valid>
+    <name>uimage</name>
+    <partition>/dev/mtd1</partition>
+	<type>kernel</type>
+    <length>1167536</length>
+	<md5>46d61bde7f09197f0a222ec4b4ac376a</md5>
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/uimage</downloadUrl>
+  </file1>
+  <file2>
+	<valid>1</valid>
+    <name>rootfs_128k.squashfs</name>
+    <partition>/dev/mtd2</partition>
+	<type>rootfs</type>
+    <length>1945600</length>
+	<md5>9b0517ef7061843ab62826c289cbefb9</md5>
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/rootfs_128k.squashfs</downloadUrl>
+  </file2>
+  <file3>
+	<valid>1</valid>
+    <name>user_64k.squashfs</name>
+    <partition>/dev/mtd3</partition>
+	<type>user_app</type>
+    <length>3104768</length>
+	<md5>33e04bb5973e8aca743306d0e7c7b525</md5>
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/user_64k.squashfs</downloadUrl>
+  </file3>
+  <file4>
+	<valid>1</valid>
+    <name>uimage</name>
+    <partition>/dev/mtd4</partition>
+	<type>kernel_bak</type>
+    <length>1167536</length>
+	<md5>46d61bde7f09197f0a222ec4b4ac376a</md5>
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/uimage</downloadUrl>
+  </file4>
+  <file5>
+	<valid>1</valid>
+    <name>rootfs_128k.squashfs</name>
+    <partition>/dev/mtd5</partition>
+	<type>rootfs_bak</type>
+    <length>1945600</length>
+	<md5>9b0517ef7061843ab62826c289cbefb9</md5>
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/rootfs_128k.squashfs</downloadUrl>
+  </file5>
+  <file6>
+	<valid>1</valid>
+    <name>user_64k.squashfs</name>
+    <partition>/dev/mtd6</partition>
+	<type>user_app_bak</type>
+    <length>3104768</length>
+	<md5>33e04bb5973e8aca743306d0e7c7b525</md5>
+    <downloadUrl>http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/ipc_firmware_1.0.0.2/user_64k.squashfs</downloadUrl>
+  </file6>
+</root>
+
