@@ -10,10 +10,10 @@ typedef struct msg_s
     int inited;
     int msgid;
     long int type;
-    pthread_mutex_t mutex;
 }msg_s;
 
 static msg_s msg;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 char* debug_time_str()
 {
@@ -30,7 +30,6 @@ static int debug_init()
 {
     memset(&msg, 0, sizeof(msg));
     msg.type = TYPE;
-    pthread_mutex_init(&msg.mutex, NULL);
     msg.msgid = msgget(KEY, 0666|IPC_CREAT);
     if (msg.msgid == -1)
     {
@@ -51,11 +50,12 @@ static int debug_init()
 
 int debug_print(const char* format, ...)
 {
+    pthread_mutex_lock(&mutex);
+    
     if (!msg.inited)
     {
         debug_init();
     }
-    pthread_mutex_lock(&msg.mutex);
     static Message send_buf;
     memset(&send_buf, 0, sizeof(send_buf));
     send_buf.type = msg.type;
@@ -70,10 +70,9 @@ int debug_print(const char* format, ...)
     if (ret < 0 && errno == EAGAIN)
     {
         msgctl(msg.msgid, IPC_RMID, 0);
-        pthread_mutex_destroy(&msg.mutex);
         debug_init();
     }
-    pthread_mutex_unlock(&msg.mutex);
+    pthread_mutex_unlock(&mutex);
 
     return 0;
 }
@@ -84,7 +83,6 @@ int debug_recv(Message* recv)
     {
         debug_init();
     }
-    //pthread_mutex_lock(&msg.mutex);
     memset(recv, 0, sizeof(*recv));
     int ret = msgrcv(msg.msgid, recv, MAXSENDSIZE, msg.type, 0);
     if (ret < 0)
@@ -92,7 +90,6 @@ int debug_recv(Message* recv)
         perror("error\n");
         return -1;
     }
-    //pthread_mutex_unlock(&msg.mutex);
 
     return 0;
 }
