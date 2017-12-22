@@ -140,67 +140,67 @@ typedef struct
     int idr_len;
 } RTP_KEY_S;
 
-/*****************************************************************************
+/*
  函 数 名: rtp_amr_alloc
- 功能描述  : RTP封装AMR的音频帧 每个RTP包都包含RTP OVER TCP的交错帧头
- 输入参数  : _pu8Frame 音频帧
+ 功能描述: RTP封装AMR的音频帧 每个RTP包都包含RTP OVER TCP的交错帧头
+ 输入参数: _pu8Frame 音频帧
             _u32FrameSize 帧大小
             _pu16SeqNumber RTP包的序号
             _u32Timestamp RTP包的时间戳
             _Ssrc RTP包的ssrc
- 输出参数  : _pRetRtpSplit 保存RTP封包的结果，需调用rtp_free来释放
+ 输出参数: _pRetRtpSplit 保存RTP封包的结果，需调用rtp_free来释放
  返 回 值: 成功返回0,失败返回小于0
-*****************************************************************************/
+*/
 int rtp_amr_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
                       unsigned short* _pu16SeqNumber, unsigned int _u32Timestamp,
                       unsigned long _Ssrc, RTP_SPLIT_S* _pRetRtpSplit);
 
-/*****************************************************************************
+/*
  函 数 名: rtp_g711_alloc
- 功能描述  : RTP封装G711的音频帧 每个RTP包都包含RTP OVER TCP的交错帧头
- 输入参数  : _pu8Frame 音频帧
+ 功能描述: RTP封装G711的音频帧 每个RTP包都包含RTP OVER TCP的交错帧头
+ 输入参数: _pu8Frame 音频帧
             _u32FrameSize 帧大小
             _pu16SeqNumber RTP包的序号
             _u32Timestamp RTP包的时间戳
             _Ssrc RTP包的ssrc
- 输出参数  : _pRetRtpSplit 保存RTP封包的结果，需调用rtp_free来释放
+ 输出参数: _pRetRtpSplit 保存RTP封包的结果，需调用rtp_free来释放
  返 回 值: 成功返回0,失败返回小于0
-*****************************************************************************/
+*/
 int rtp_g711a_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
                       unsigned short* _pu16SeqNumber, unsigned int _u32Timestamp,
                       unsigned long _Ssrc, RTP_SPLIT_S* _pRetRtpSplit);
 
-/*****************************************************************************
+/*
  函 数 名: rtp_h264_split
- 功能描述  : h264裸流分割nalu，获取每个nalu的分界点
- 输入参数  : _pu8Frame 视频帧
+ 功能描述: h264裸流分割nalu，获取每个nalu的分界点
+ 输入参数: _pu8Frame 视频帧
             _u32FrameSize 帧大小
- 输出参数  : 无
+ 输出参数: 无
  返 回 值: 成功返回第二个nalu的分界点,失败返回小于0
-*****************************************************************************/
+*/
 int rtp_h264_split(unsigned char* _pu8Frame, unsigned int _u32FrameSize);
 
-/*****************************************************************************
+/*
  函 数 名: rtp_h264_alloc
- 功能描述  : RTP封装h264的视频帧，每个RTP包都包含RTP OVER TCP的交错帧头
- 输入参数  : _pu8Frame 视频帧
+ 功能描述: RTP封装h264的视频帧，每个RTP包都包含RTP OVER TCP的交错帧头
+ 输入参数: _pu8Frame 视频帧
             _u32FrameSize 帧大小
             _pu16SeqNumber RTP包的序号
             _u32Timestamp RTP包的时间戳
- 输出参数  : _pRetRtpSplit 保存RTP封包的结果
+ 输出参数: _pRetRtpSplit 保存RTP封包的结果
  返 回 值: 成功返回0,失败返回小于0
-*****************************************************************************/
+*/
 int rtp_h264_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
                        unsigned short* _pu16SeqNumber, unsigned int _u32Timestamp,
                        RTP_SPLIT_S* _pRetRtpSplit);
 
-/*****************************************************************************
+/*
  函 数 名: rtp_free
- 功能描述  : 释放RTP包封装的资源
- 输入参数  : _pRetRtpSplit 保存RTP封包的结果
- 输出参数  :
+ 功能描述: 释放RTP包封装的资源
+ 输入参数: _pRetRtpSplit 保存RTP封包的结果
+ 输出参数:
  返 回 值: 成功返回0,失败返回小于0
-*****************************************************************************/
+*/
 int rtp_free(RTP_SPLIT_S* _pRetRtpSplit);
 
 
