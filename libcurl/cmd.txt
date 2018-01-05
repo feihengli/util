@@ -1,7 +1,0 @@
- 
- cd xxx/curl-7.53.1;
- ./configure CC=arm-hisiv300-linux-gcc --host=arm-linux
- make
- 
- cp ./lib/.libs/libcurl.a ../ -af
- cp include/curl/ ../ -r
