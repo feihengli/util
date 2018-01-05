@@ -8,11 +8,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "../sal_av.h"
-#include "../sal_audio.h"
-#include "../sal_debug.h"
-#include "../sal_special.h"
-#include "../sal_util.h"
+#include "sal_av.h"
+#include "sal_audio.h"
+#include "sal_debug.h"
+//#include "sal_special.h"
+#include "sal_util.h"
 
 static int test_exit = 0;
 static FILE* fp = NULL;
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 
 
     //do not enable other moudles
-    sal_special_disable(1);
+    //sal_special_disable(1);
 
     //config of video
     sal_video_s video;

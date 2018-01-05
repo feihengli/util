@@ -5,10 +5,10 @@
 #include <signal.h>
 #include <sys/prctl.h>
 #include <errno.h>
-#include "../sal_av.h"
-#include "../sal_yuv.h"
-#include "../sal_debug.h"
-#include "../sal_special.h"
+#include "sal_av.h"
+#include "sal_yuv.h"
+#include "sal_debug.h"
+//#include "sal_special.h"
 
 #include "zbar.h"
 
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
     init_signals();
 
     //do not enable other moudles
-    sal_special_disable(1);
+    //sal_special_disable(1);
 
     //config of video
     sal_video_s video;
