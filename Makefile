@@ -1,4 +1,5 @@
 
+
 all:
 	@for x in `find ./ -maxdepth 2 -mindepth 2 -name "Makefile" `; do\
 	   { cd `dirname $$x`; if [ $$? ]; then make || exit 1;  cp *.a ../lib/ -af; cd ../; fi;}& done; wait

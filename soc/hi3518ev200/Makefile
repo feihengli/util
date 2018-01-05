@@ -32,6 +32,7 @@ CXXFLAGS := -Wall -I./
 CXXFLAGS += -DSENSOR_TYPE=$(SENSOR_TYPE)
 CXXFLAGS += -I./mpp_include
 CXXFLAGS += -I../../
+CXXFLAGS += -I../../opensource
 CXXFLAGS += -I../../libbase
 
 all:$(TARGETS) sensor_lib

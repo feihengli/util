@@ -4,7 +4,7 @@
 #include "sal_util.h"
 #include "sal_curl.h"
 
-#include "curl/curl.h"
+#include "libcurl/curl.h"
 
 #define CURL_WRAPPER_VALID_MAGIC (0x74246F94)
 static int g_bCurlWrapperHttpPostImgShowDebug = 0;
