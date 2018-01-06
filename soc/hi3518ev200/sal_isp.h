@@ -81,7 +81,7 @@ int sal_isp_day_night_switch(SAL_ISP_MODE_E mode, sal_image_attr_s* attr);
 /*
  函 数 名: sal_isp_image_attr_set
  功能描述: SAL层设置图像属性
- 输入参数:    type  (饱和度，对比度，亮度，锐度)
+ 输入参数:  type  (饱和度，对比度，亮度，锐度)
             value 图像属性的量化值，范围0-255，128是默认值
                   如传入默认值需要设置isp内部自动调节
  输出参数: 无
