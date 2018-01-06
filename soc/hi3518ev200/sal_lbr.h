@@ -27,6 +27,7 @@ int sal_lbr_init();
  返 回 值: 成功返回0,失败返回小于0
 */
 int sal_lbr_exit();
+
 /*
  函 数 名: sal_lbr_get_str
  功能描述: 获取lbr当前的模式，内部使用接口
