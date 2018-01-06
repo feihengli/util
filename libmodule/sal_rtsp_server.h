@@ -20,7 +20,7 @@ typedef struct client_s // 客户端链表的节点数据
 /*
  函 数 名: rtsps_init
  功能描述: 初始化RTSP服务器模块，使用VLC播放时，
-            由于此RTSP支持TCP的传输方式，需要设置VLC的RTP OVER TCP选项
+            由于此RTSP模块只支持TCP的传输方式，需要设置VLC的RTP OVER TCP选项
             访问主子码流URL例子：
             rtsp://192.168.0.110:554/MainStream
             rtsp://192.168.0.110:554/SubStream
