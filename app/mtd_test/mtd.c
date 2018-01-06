@@ -8,8 +8,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "../sal_debug.h"
-#include "../sal_mtd.h"
+#include "sal_debug.h"
+#include "sal_mtd.h"
 
 static int test_exit = 0;
 

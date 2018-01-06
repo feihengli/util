@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <signal.h>
 
-#include "../sal_gpio.h"
+#include "sal_gpio.h"
 
 #define MUXCTRL_OFFSET_GPIO1_0 (0x7c)             //LED red
 #define MUXCTRL_OFFSET_GPIO1_4 (0x8c)             //LED green

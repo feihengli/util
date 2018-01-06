@@ -7,18 +7,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "../sal_av.h"
-#include "../sal_audio.h"
-#include "../sal_isp.h"
-#include "../sal_yuv.h"
-#include "../sal_md.h"
-#include "../sal_jpeg.h"
-#include "../sal_lbr.h"
-#include "../sal_bitmap.h"
-#include "../sal_osd.h"
-#include "../sal_ircut.h"
-#include "../sal_debug.h"
-#include "../sal_upgrade.h"
+#include "sal_av.h"
+#include "sal_audio.h"
+#include "sal_isp.h"
+#include "sal_yuv.h"
+#include "sal_md.h"
+#include "sal_jpeg.h"
+#include "sal_lbr.h"
+#include "sal_bitmap.h"
+#include "sal_osd.h"
+#include "sal_ircut.h"
+#include "sal_debug.h"
+#include "sal_upgrade.h"
 
 static int test_exit = 0;
 

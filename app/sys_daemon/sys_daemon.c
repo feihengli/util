@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <assert.h>
 
-#include "../sal_gpio.h"
+#include "sal_gpio.h"
 
 #define MUXCTRL_OFFSET_GPIO1_6 (0x94)             //button
 

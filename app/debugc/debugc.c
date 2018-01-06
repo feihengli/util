@@ -1,4 +1,4 @@
-#include "../sal_debug.h"
+#include "sal_debug.h"
 
 
 int main(int argc, char** argv)

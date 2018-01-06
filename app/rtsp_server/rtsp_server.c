@@ -8,11 +8,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "../sal_av.h"
-#include "../sal_audio.h"
-#include "../sal_debug.h"
-#include "../sal_frame_pool.h"
-#include "../sal_rtsp_server.h"
+#include "sal_av.h"
+#include "sal_audio.h"
+#include "sal_debug.h"
+#include "sal_frame_pool.h"
+#include "sal_rtsp_server.h"
 
 static int test_exit = 0;
 

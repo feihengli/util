@@ -8,10 +8,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "../sal_debug.h"
-#include "../sal_curl.h"
-#include "../sal_util.h"
-#include "../sal_md5.h"
+#include "sal_debug.h"
+#include "sal_curl.h"
+#include "sal_util.h"
+#include "sal_md5.h"
 
 static int test_exit = 0;
 
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     int ret = -1;
     init_signals();
 
-    handle g_hndCurlWrapper = curl_wrapper_init();
+    handle g_hndCurlWrapper = curl_wrapper_init(200);
     CHECK(g_hndCurlWrapper, -1, "Error with: %#x\n", g_hndCurlWrapper);
 
     //char* http_url = "http://192.168.0.32:8186/mktech_auto_update_app";

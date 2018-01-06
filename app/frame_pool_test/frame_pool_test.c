@@ -7,18 +7,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "../sal_av.h"
-#include "../sal_audio.h"
-#include "../sal_isp.h"
-#include "../sal_yuv.h"
-#include "../sal_md.h"
-#include "../sal_jpeg.h"
-#include "../sal_lbr.h"
-#include "../sal_bitmap.h"
-#include "../sal_osd.h"
-#include "../sal_ircut.h"
-#include "../sal_debug.h"
-#include "../sal_frame_pool.h"
+#include "sal_av.h"
+#include "sal_audio.h"
+#include "sal_isp.h"
+#include "sal_yuv.h"
+#include "sal_md.h"
+#include "sal_jpeg.h"
+#include "sal_lbr.h"
+#include "sal_bitmap.h"
+#include "sal_osd.h"
+#include "sal_ircut.h"
+#include "sal_debug.h"
+#include "sal_frame_pool.h"
 
 static int test_exit = 0;
 
@@ -58,7 +58,7 @@ int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
 
 int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts)
 {
-    frame_pool_add(gHndMainFramePool, frame, len, key, pts);
+    frame_pool_add(gHndMainFramePool, frame, len, FRAME_TYPE_H264, key, pts);
 
     return 0;
 }
@@ -128,21 +128,21 @@ int main(int argc, char** argv)
     while (!test_exit)
     {
 
-        frame_info_s* frame = frame_pool_get(gHndMainFramePool, gHndMainReader);
+        frame_info_s* frame = frame_pool_get(gHndMainReader);
         if (frame)
         {
             DBG("sequence: %d, len: %d\n", frame->sequence, frame->len);
-            frame_pool_release(gHndMainFramePool, gHndMainReader, frame);
+            frame_pool_release(gHndMainReader, frame);
         }
         else
         {
             DBG("get NULL\n");
         }
-        frame_info_s* frame1 = frame_pool_get(gHndMainFramePool, gHndMainReader1);
+        frame_info_s* frame1 = frame_pool_get(gHndMainReader1);
         if (frame1)
         {
             DBG("sequence: %d, len: %d\n", frame1->sequence, frame1->len);
-            frame_pool_release(gHndMainFramePool, gHndMainReader1, frame1);
+            frame_pool_release(gHndMainReader1, frame1);
         }
         else
         {
