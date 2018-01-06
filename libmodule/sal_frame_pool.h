@@ -13,20 +13,21 @@ extern "C"{
 typedef enum FRAME_TYPE_E
 {
     FRAME_TYPE_H264 = 0,
-    FRAME_TYPE_G711A,
-    FRAME_TYPE_G711U,
+    FRAME_TYPE_H265,
+    FRAME_TYPE_G711A,    //alaw
+    FRAME_TYPE_G711U,    //ulaw
 }FRAME_TYPE_E;
 
 typedef struct frame_info_s
 {
-    FRAME_TYPE_E type;
-    void* data;
-    int len;
-    double timestamp;
-    int keyFrame;
-    unsigned int sequence;
+    FRAME_TYPE_E type;     //帧类型
+    void* data;            //帧数据
+    int len;               //帧长度
+    double timestamp;      //帧绝对时间戳
+    int keyFrame;          //是否关键帧。1：是 0：否 （若是音频帧，则此标志一直是1）
+    unsigned int sequence; //帧序号
 
-    int reference;
+    int reference;         //帧引用计数，内部释放使用，外部不能更改此值
 }frame_info_s;
 
 extern handle gHndMainFramePool;  //主码流句柄

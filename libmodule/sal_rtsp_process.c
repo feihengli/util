@@ -115,8 +115,9 @@ static int _RtspComplete(void* _pData, int _u32DataLen, int* _pu32CompleteLen)
     return 0;
 }
 
-static int _RtspOrRtcpComplete(void* _pData, int _u32DataLen, int* _pu32CompleteLen)
+static int _RtspOrRtcpComplete(void* _pData, int _u32DataLen, int* _pu32CompleteLen, void* cb_param)
 {
+    //RTSP_SERVER_S* pstRtspServer = (RTSP_SERVER_S*)cb_param;
     //DBG("_u32DataLen=%u\n", _u32DataLen);
     *_pu32CompleteLen = 0;
 
@@ -901,7 +902,7 @@ void* rtsp_process(void* _pstSession)
     unsigned int u32ExpectTimeout = 0;
     unsigned int u32Timeout = 0;
 
-    stRtspServer.hndSocket = select_init(_RtspOrRtcpComplete, 4*1024, pclient->fd);
+    stRtspServer.hndSocket = select_init(_RtspOrRtcpComplete, &stRtspServer, 4*1024, pclient->fd);
     CHECK(stRtspServer.hndSocket, NULL, "Error with: %#x\n", stRtspServer.hndSocket);
 
     ret = select_debug(stRtspServer.hndSocket, 0);

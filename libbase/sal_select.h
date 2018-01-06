@@ -10,7 +10,18 @@ extern "C"{
 
 #include "sal_standard.h"
 
-typedef int (*completeness_cb)(void* pData, int DataLen, int* _ps32CompleteLen);
+/*
+ 函 数 名: completeness_cb
+ 功能描述: 判断数据是否是一个完整的数据包
+ 输入参数:  pData 待检测的数据
+            DataLen 数据长度
+            user 用户参数
+ 输出参数: _ps32CompleteLen 数据完整的长度：>1 表示接收到数据是完整的，且完整的数据包长度为_ps32CompleteLen，处理掉这个数据包
+                                            =1 表示接收到数据是错误的，内部会丢弃一个字节继续检测
+                                            =0 表示接收到数据是不完整的，内部不做处理，等待下次继续检测
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+typedef int (*completeness_cb)(void* pData, int DataLen, int* _ps32CompleteLen, void* cb_param);
 
 /*
  函 数 名: select_init
@@ -21,7 +32,7 @@ typedef int (*completeness_cb)(void* pData, int DataLen, int* _ps32CompleteLen);
  输出参数: 无
  返 回 值: 成功返回句柄,失败返回NULL
 */
-handle select_init(completeness_cb complete, int cache_size, int fd);
+handle select_init(completeness_cb complete, void* cb_param, int cache_size, int fd);
 
 /*
  函 数 名: select_destroy

@@ -22,6 +22,7 @@ typedef struct select_s
     handle hndrlist;
     handle hndcache;
     completeness_cb complete_cb;
+    void* cb_param;
     unsigned int total_sentsize;
     unsigned int total_readsize;
 
@@ -38,7 +39,7 @@ static int select_nonblock_set(int fd)
     return 0;
 }
 
-handle select_init(completeness_cb complete, int cache_size, int fd)
+handle select_init(completeness_cb complete, void* cb_param, int cache_size, int fd)
 {
     CHECK(complete, NULL, "invalid parameter with: %#x\n", complete);
     CHECK(cache_size > 0, NULL, "invalid parameter with: %#x\n", cache_size);
@@ -65,6 +66,7 @@ handle select_init(completeness_cb complete, int cache_size, int fd)
     CHECK(ret == 0, NULL, "error with %#x\n", ret);
 
     pstSelect->complete_cb = complete;
+    pstSelect->cb_param = cb_param;
 
     pstSelect->fd = fd;
     ret = select_nonblock_set(fd);
@@ -170,7 +172,7 @@ static int select_read(select_s* pstSelect)
         if (begin && len > 0)
         {
             int s32CompleteLen = 0;
-            ret = pstSelect->complete_cb(begin, len, &s32CompleteLen);
+            ret = pstSelect->complete_cb(begin, len, &s32CompleteLen, pstSelect->cb_param);
             CHECK(ret == 0, -1, "error with %#x\n", ret);
 
             if (s32CompleteLen > 1)

@@ -9,7 +9,7 @@ endif
 all:
 	make -C $(PLATFORM_PATH)
 	cp -af $(PLATFORM_PATH)/*.a ./
-	cp -af $(PLATFORM_PATH)/mpp_lib/*.a ./
+	cp -af $(PLATFORM_PATH)/mpp_lib/*.a ../lib
 
 clean:
 	make -C $(PLATFORM_PATH) clean
