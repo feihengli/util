@@ -1554,7 +1554,7 @@ static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STA
     HI_S32 s32Ret = HI_FAILURE;
     char* buffer = g_av_args->multiple_buffer;
 
-    //DBG("u32CurPacks: %u\n", stStat.u32CurPacks);
+    //DBG("u32CurPacks: %u\n", pstStat->u32CurPacks);
     pstStream->pstPack = (VENC_PACK_S*)malloc(sizeof(VENC_PACK_S) * pstStat->u32CurPacks);
     CHECK(pstStream->pstPack, HI_FAILURE, "malloc %d bytes failed.\n", sizeof(VENC_PACK_S) * pstStat->u32CurPacks);
 
@@ -1569,15 +1569,15 @@ static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STA
     {
         HI_U8* frame_addr = pstStream->pstPack[j].pu8Addr + pstStream->pstPack[j].u32Offset;
         HI_U32 frame_len = pstStream->pstPack[j].u32Len - pstStream->pstPack[j].u32Offset;
-        isKey = (pstStream->pstPack[j].DataType.enH264EType == H264E_NALU_ISLICE) ? 1 : 0;
-        //DBG("stream: %d type: %d isKey: %d\n", i, stStream.pstPack[j].DataType.enH264EType, isKey);
+        isKey |= (pstStream->pstPack[j].DataType.enH264EType == H264E_NALU_IDRSLICE) ? 1 : 0;
+        //DBG("stream: %d type: %d isKey: %d\n", i, pstStream->pstPack[j].DataType.enH264EType, isKey);
 
         memcpy(buffer+buffer_offset, frame_addr, frame_len);
         buffer_offset += frame_len;
     }
 
-    //DBG("stream: %d, len: %d isKey: %d\n", i, buffer_offset, isKey);
-    s32Ret = venc_write_cb(i, pstStream->pstPack[j].u64PTS, buffer, buffer_offset, isKey);
+    //DBG("stream: %d, len: %d isKey: %d, u64PTS: %llu\n", i, buffer_offset, isKey, pstStream->pstPack[j-1].u64PTS);
+    s32Ret = venc_write_cb(i, pstStream->pstPack[j-1].u64PTS, buffer, buffer_offset, isKey);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     s32Ret = HI_MPI_VENC_ReleaseStream(i, pstStream);

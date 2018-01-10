@@ -857,7 +857,7 @@ static int _SendVFrame(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
             pu8Frame = pu8Tmp;
             u32FrameSize = u32TmpSize;
         }
-
+        //DBG("u32VTimeStamp: %d, u16VSeqNum: %d\n", _pstRtspServer->u32VTimeStamp, _pstRtspServer->u16VSeqNum);
         RTP_SPLIT_S* pstRetVRtpSplit = (RTP_SPLIT_S*)mem_malloc(sizeof(RTP_SPLIT_S));
         ret = rtp_h264_alloc(pu8Frame, u32FrameSize, &_pstRtspServer->u16VSeqNum,
                             _pstRtspServer->u32VTimeStamp, pstRetVRtpSplit);
