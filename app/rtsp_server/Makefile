@@ -15,14 +15,22 @@ ifeq ($(HIARCH), hi3518ev200)
 	CFLAGS += -I../../soc/hi3518ev200
 endif
 
-MPI_LIBS := ../../lib/libipc.so
+ifeq ($(HIARCH), hi3516av200)
+	CFLAGS += -I../../soc/hi3516av200
+endif
+
+MPI_LIBS := libipc.so
+#MPI_LIBS := ../../lib/libipc.a
 SRC=$(wildcard *.c)
 OBJS=$(patsubst %.c,%.o,$(SRC))
 
 TARGET=rtsp_server
 $(TARGET): $(OBJS)
+	cp ../../lib/libipc.so ./ -af
 	$(LINK) -lpthread -lm -ldl -o $@ $^ $(MPI_LIBS)
 	$(STRIP) $@
+	cp $@ /install/nfs/test/test_encode/ -af
+	cp ../../lib/libipc.so /install/nfs/test/test_encode/ -af
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

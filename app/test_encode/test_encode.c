@@ -77,34 +77,34 @@ int main(int argc, char** argv)
     memset(&video, 0, sizeof(video));
     video.cb = get_video_frame_cb;
     video.stream[0].enable = 1;
-    video.stream[0].width = 1920;
-    video.stream[0].height = 1080;
-    video.stream[0].framerate = 15;
-    video.stream[0].bitrate = 1000;
+    video.stream[0].width = 4000;
+    video.stream[0].height = 3000;
+    video.stream[0].framerate = 30;
+    video.stream[0].bitrate = 6000;
     video.stream[0].gop = 4 * video.stream[0].framerate;
-    video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_VBR;
+    video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
 
     video.stream[1].enable = 1;
     video.stream[1].width = 640;
     video.stream[1].height = 360;
-    video.stream[1].framerate = 15;
+    video.stream[1].framerate = 30;
     video.stream[1].bitrate = 500;
     video.stream[1].gop = 4 * video.stream[1].framerate;
-    video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_VBR;
+    video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
     sal_sys_init(&video);
 
     //config of audio
-    sal_audio_s audio;
-    memset(&audio, 0, sizeof(audio));
-    audio.enable = 1;
-    strcpy(audio.encType, "LPCM");
-    audio.channels = 1;
-    audio.bitWidth = 16;
-    audio.volume = 80;
-    audio.sampleRate = 8000;
-    audio.ptNumPerFrm = 320;
-    audio.cb = get_audio_frame_cb;
-    sal_audio_init(&audio);
+    //sal_audio_s audio;
+    //memset(&audio, 0, sizeof(audio));
+    //audio.enable = 1;
+    //strcpy(audio.encType, "LPCM");
+    //audio.channels = 1;
+    //audio.bitWidth = 16;
+    //audio.volume = 80;
+    //audio.sampleRate = 8000;
+    //audio.ptNumPerFrm = 320;
+    //audio.cb = get_audio_frame_cb;
+    //sal_audio_init(&audio);
 
 
     while (!test_exit)
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
         sleep(1);
     }
 
-    sal_audio_exit();
+    //sal_audio_exit();
     sal_sys_exit();
 
     return 0;

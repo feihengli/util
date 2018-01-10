@@ -16,6 +16,7 @@ all:$(TARGETS)
 
 $(TARGETS):$(OBJS)
 	$(PRINTF) "$(AR)  $@";$(AR) rcs $@ $^
+	$(PRINTF) "RANLIB  $@";$(RANLIB) $@
 
 %.o: %.cpp
 	$(PRINTF) "$(CXX) $@";$(CXX) -c $(CXXFLAGS) -o $@ $<

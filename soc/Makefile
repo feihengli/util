@@ -5,6 +5,10 @@ ifeq ($(HIARCH), hi3518ev200)
 	PLATFORM_PATH := ./hi3518ev200
 endif
 
+ifeq ($(HIARCH), hi3516av200)
+	PLATFORM_PATH := ./hi3516av200
+endif
+
 
 all:
 	make -C $(PLATFORM_PATH)

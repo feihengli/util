@@ -9,6 +9,7 @@ all:
 	   { $(AR) -x $$i;}& done; wait
 	$(CC) -shared -fPIC -o $(LIB_NAME).so *.o
 	$(AR) rcs -o $(LIB_NAME).a *.o
+	$(RANLIB) $(LIB_NAME).a
 	$(STRIP) $(LIB_NAME).*
 	@rm -rf *.o
 clean:

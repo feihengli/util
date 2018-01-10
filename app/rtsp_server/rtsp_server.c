@@ -101,8 +101,8 @@ int main(int argc, char** argv)
     memset(&video, 0, sizeof(video));
     video.cb = get_video_frame_cb;
     video.stream[0].enable = 1;
-    video.stream[0].width = 1920;
-    video.stream[0].height = 1080;
+    video.stream[0].width = 4000;
+    video.stream[0].height = 3000;
     video.stream[0].framerate = 15;
     video.stream[0].bitrate = 2500;
     video.stream[0].gop = 2 * video.stream[0].framerate;
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
     DBG("sys video init done.\n");
 
     //config of audio
-    sal_audio_s audio;
+    /*sal_audio_s audio;
     memset(&audio, 0, sizeof(audio));
     audio.enable = 1;
     strcpy(audio.encType, "G.711A");
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     audio.cb = get_audio_frame_cb;
     ret = sal_audio_init(&audio);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-    DBG("sys audio init done.\n");
+    DBG("sys audio init done.\n");*/
 
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
     }
 
     rtsps_destroy(hndRtsps);
-    sal_audio_exit();
+    //sal_audio_exit();
     sal_sys_exit();
 
     frame_pool_destroy(gHndSubFramePool);

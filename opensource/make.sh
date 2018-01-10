@@ -2,7 +2,8 @@
 #编译所有第三方开源库，并拷贝静态库和头文件到当前目录
 #注意解压源码后的目录不能与存放头文件的目录重名
 
-COMPILE=arm-hisiv300-linux-
+#COMPILE=arm-hisiv300-linux-
+COMPILE=arm-hisiv600-linux-
 
 echo "COMPILE=${COMPILE}"
 sleep 1
