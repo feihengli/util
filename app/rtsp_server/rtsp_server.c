@@ -144,8 +144,8 @@ int main(int argc, char** argv)
     
     
     //jpeg
-    //ret = sal_jpeg_init(get_jpeg_frame_cb);
-    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    ret = sal_jpeg_init(get_jpeg_frame_cb);
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     
    /* ret = sal_osd_init();
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);*/
@@ -164,8 +164,8 @@ int main(int argc, char** argv)
     ret = sal_osd_exit();
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     
-    //ret = sal_jpeg_exit();
-    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    ret = sal_jpeg_exit();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
     rtsps_destroy(hndRtsps);
     //sal_audio_exit();
