@@ -10,9 +10,12 @@
 
 #include "sal_av.h"
 #include "sal_audio.h"
+#include "sal_jpeg.h"
+#include "sal_osd.h"
 #include "sal_debug.h"
 #include "sal_frame_pool.h"
 #include "sal_rtsp_server.h"
+#include "sal_osd_fullscreen.h"
 
 static int test_exit = 0;
 
@@ -70,6 +73,11 @@ int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, doub
     return 0;
 }
 
+int get_jpeg_frame_cb(char *frame, int len)
+{
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     int ret = -1;
@@ -106,7 +114,7 @@ int main(int argc, char** argv)
     video.stream[0].framerate = 15;
     video.stream[0].bitrate = 2500;
     video.stream[0].gop = 2 * video.stream[0].framerate;
-    video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_VBR;
+    video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
 
     video.stream[1].enable = 1;
     video.stream[1].width = 640;
@@ -114,7 +122,7 @@ int main(int argc, char** argv)
     video.stream[1].framerate = 15;
     video.stream[1].bitrate = 500;
     video.stream[1].gop = 2 * video.stream[1].framerate;
-    video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_VBR;
+    video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
     ret = sal_sys_init(&video);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys video init done.\n");
@@ -133,6 +141,17 @@ int main(int argc, char** argv)
     ret = sal_audio_init(&audio);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys audio init done.\n");*/
+    
+    
+    //jpeg
+    //ret = sal_jpeg_init(get_jpeg_frame_cb);
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+   /* ret = sal_osd_init();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);*/
+    
+    ret = sal_osd_fullscreen_init();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
@@ -141,6 +160,12 @@ int main(int argc, char** argv)
     {
         usleep(1);
     }
+    
+    ret = sal_osd_exit();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    //ret = sal_jpeg_exit();
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
     rtsps_destroy(hndRtsps);
     //sal_audio_exit();
