@@ -14,6 +14,9 @@ typedef struct sal_jpeg_args
     int height;
     int fps;
     sal_jpeg_cb cb;
+    
+    int onestream_enable;//单包模式/多包模式
+    char* multiple_buffer; //多包模式下需要使用buffer来拼合一个帧
 
     int running;
     pthread_t tid;
@@ -35,7 +38,7 @@ static HI_S32 jpeg_create_chn()
     stJpegAttr.u32MaxPicHeight = g_jpeg_args->height;
     stJpegAttr.u32PicWidth  = g_jpeg_args->widht;
     stJpegAttr.u32PicHeight = g_jpeg_args->height;
-    stJpegAttr.u32BufSize = g_jpeg_args->widht*g_jpeg_args->height*3/4;
+    stJpegAttr.u32BufSize = g_jpeg_args->widht*g_jpeg_args->height*2;
     stJpegAttr.bByFrame = HI_TRUE;
     stJpegAttr.bSupportDCF = HI_FALSE;
     memcpy(&stVencChnAttr.stVeAttr.stAttrJpege, &stJpegAttr, sizeof(VENC_ATTR_JPEG_S));
@@ -199,6 +202,91 @@ static int jpeg_write_frame(char* addr, int size)
     return 0;
 }
 
+static int jpeg_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* pstStat)
+{
+    HI_S32 s32Ret = HI_FAILURE;
+    VENC_PACK_S pack;
+    memset(&pack, 0, sizeof(pack));
+
+    CHECK(1 == pstStat->u32CurPacks, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    pstStream->pstPack = &pack;
+    pstStream->u32PackCount = pstStat->u32CurPacks;
+
+    int timeout = 0; // 非阻塞
+    s32Ret = HI_MPI_VENC_GetStream(i, pstStream, timeout);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    HI_U8* frame_addr = pstStream->pstPack->pu8Addr + pstStream->pstPack->u32Offset;
+    HI_U32 frame_len = pstStream->pstPack->u32Len - pstStream->pstPack->u32Offset;
+    int isKey = (pstStream->pstPack->DataType.enH264EType == H264E_NALU_ISLICE) ? 1 : 0;
+
+    //s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    if (g_jpeg_args->cb)
+    {
+        g_jpeg_args->cb((char*)frame_addr, frame_len);
+    }
+
+    if (JPEG_LOCAL_TEST)
+    {
+        s32Ret = jpeg_write_frame((char*)frame_addr, frame_len);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+
+    s32Ret = HI_MPI_VENC_ReleaseStream(i, pstStream);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    return 0;
+}
+
+static int jpeg_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* pstStat)
+{
+    HI_S32 s32Ret = HI_FAILURE;
+    char* buffer = g_jpeg_args->multiple_buffer;
+
+    //DBG("u32CurPacks: %u\n", pstStat->u32CurPacks);
+    pstStream->pstPack = (VENC_PACK_S*)malloc(sizeof(VENC_PACK_S) * pstStat->u32CurPacks);
+    CHECK(pstStream->pstPack, HI_FAILURE, "malloc %d bytes failed.\n", sizeof(VENC_PACK_S) * pstStat->u32CurPacks);
+
+    pstStream->u32PackCount = pstStat->u32CurPacks;
+
+    s32Ret = HI_MPI_VENC_GetStream(i, pstStream, HI_TRUE);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    int isKey = 0;
+    int buffer_offset = 0;
+    int j = 0;
+    for (j = 0; j < pstStream->u32PackCount; j++)
+    {
+        HI_U8* frame_addr = pstStream->pstPack[j].pu8Addr + pstStream->pstPack[j].u32Offset;
+        HI_U32 frame_len = pstStream->pstPack[j].u32Len - pstStream->pstPack[j].u32Offset;
+        isKey |= (pstStream->pstPack[j].DataType.enH264EType == H264E_NALU_IDRSLICE) ? 1 : 0;
+        //DBG("stream: %d type: %d isKey: %d\n", i, pstStream->pstPack[j].DataType.enH264EType, isKey);
+
+        memcpy(buffer+buffer_offset, frame_addr, frame_len);
+        buffer_offset += frame_len;
+    }
+
+    //DBG("stream: %d, len: %d isKey: %d, u64PTS: %llu\n", i, buffer_offset, isKey, pstStream->pstPack[j-1].u64PTS);
+    if (g_jpeg_args->cb)
+    {
+        g_jpeg_args->cb((char*)buffer, buffer_offset);
+    }
+
+    if (JPEG_LOCAL_TEST)
+    {
+        s32Ret = jpeg_write_frame((char*)buffer, buffer_offset);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+
+    s32Ret = HI_MPI_VENC_ReleaseStream(i, pstStream);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    free(pstStream->pstPack);
+    pstStream->pstPack = NULL;
+
+    return 0;
+}
+
 static HI_S32 jpeg_get_one_picture()
 {
     HI_S32 s32Ret = HI_FAILURE;
@@ -241,36 +329,18 @@ static HI_S32 jpeg_get_one_picture()
                 DBG("NOTE: Current  frame is NULL!\n");
                 return HI_SUCCESS;
             }
-
-            // 使用单包模式获取
-            if (1 == stStat.u32CurPacks)
+            //DBG("u32CurPacks: %u\n", stStat.u32CurPacks);
+            
+            VENC_STREAM_S stStream;
+            memset(&stStream, 0, sizeof(stStream));
+            if (g_jpeg_args->onestream_enable)
             {
-                VENC_PACK_S pack;
-                memset(&pack, 0, sizeof(pack));
-                VENC_STREAM_S stStream;
-                memset(&stStream, 0, sizeof(stStream));
-
-                stStream.pstPack = &pack;
-                stStream.u32PackCount = stStat.u32CurPacks;
-
-                s32Ret = HI_MPI_VENC_GetStream(VencChn, &stStream, -1);
+                s32Ret = jpeg_one_pack(VencChn, &stStream, &stStat);
                 CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-                HI_U8* frame_addr = stStream.pstPack->pu8Addr + stStream.pstPack->u32Offset;
-                HI_U32 frame_len = stStream.pstPack->u32Len - stStream.pstPack->u32Offset;
-
-                if (g_jpeg_args->cb)
-                {
-                    g_jpeg_args->cb((char*)frame_addr, frame_len);
-                }
-
-                if (JPEG_LOCAL_TEST)
-                {
-                    s32Ret = jpeg_write_frame((char*)frame_addr, frame_len);
-                    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-                }
-
-                s32Ret = HI_MPI_VENC_ReleaseStream(VencChn, &stStream);
+            }
+            else
+            {
+                s32Ret = jpeg_multiple_pack(VencChn, &stStream, &stStat);
                 CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
             }
         }
@@ -314,6 +384,14 @@ int sal_jpeg_init(sal_jpeg_cb cb)
     g_jpeg_args->height = g_config.jpeg.height;
     g_jpeg_args->cb = cb;
     g_jpeg_args->fps = 5;
+    
+    g_jpeg_args->onestream_enable = 0;
+    if (!g_jpeg_args->onestream_enable)
+    {
+        int size = g_jpeg_args->widht*g_jpeg_args->height/3;
+        g_jpeg_args->multiple_buffer = malloc(size);
+        CHECK(g_jpeg_args->multiple_buffer, HI_FAILURE, "malloc %d bytes failed.\n", size);
+    }
 
     sal_stream_s stream;
     memset(&stream, 0, sizeof(stream));
@@ -360,7 +438,13 @@ int sal_jpeg_exit()
 
      s32Ret = jpeg_disable_chn();
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
+    
+    if (!g_jpeg_args->onestream_enable && g_jpeg_args->multiple_buffer)
+    {
+        free(g_jpeg_args->multiple_buffer);
+        g_jpeg_args->multiple_buffer = NULL;
+    }
+    
     pthread_mutex_destroy(&g_jpeg_args->mutex);
     free(g_jpeg_args);
     g_jpeg_args = NULL;

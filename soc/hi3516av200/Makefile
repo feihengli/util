@@ -23,35 +23,32 @@ else ifeq ($(SENSOR_TYPE), SONY_IMX226_LVDS_12M_30FPS)
 endif
 
 TARGETS := libmpp.a
-PRINTF := @printf "\033[31;1m\t%s\033[0m\n"
 
 SRC :=$(wildcard *.c)
 SRC += $(wildcard *.cpp)
 
 OBJS := $(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SRC)))
 
-CXXFLAGS := -Wall -I./
+CXXFLAGS += -g -Wall -I./
 CXXFLAGS += -DSENSOR_TYPE=$(SENSOR_TYPE)
 CXXFLAGS += -I./mpp_include
 CXXFLAGS += -I../../
-CXXFLAGS += -I../../opensource
-CXXFLAGS += -I../../libbase
+CXXFLAGS += -I../../common_include
 
 all:$(TARGETS) sensor_lib
 
 $(TARGETS):$(OBJS)
-	$(PRINTF) "AR  $@";$(AR) rcs $@ $^
-	$(PRINTF) "RANLIB  $@";$(RANLIB) $@
+	$(AR) rcs $@ $^
 sensor_lib:
 	make -C $(SENSOR_PATH)
-	cp $(SENSOR_PATH)/*.a ./ -af
+	cp $(SENSOR_PATH)/*.a ./libsns.a -af
 
 %.o: %.cpp
-	$(PRINTF) "$(CXX) $@";$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 %.o: %.c
-	$(PRINTF) "$(CC) $@";$(CC) -c $(CXXFLAGS) -o $@ $<
+	$(CC) -c $(CXXFLAGS) -o $@ $<
 
 clean:
 	make -C $(SENSOR_PATH) clean
-	$(PRINTF) "RM  $(TARGETS)";rm -r $(TARGETS);rm *.o *.a
+	rm -r $(TARGETS);rm *.o *.a

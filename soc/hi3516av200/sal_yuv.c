@@ -181,7 +181,7 @@ int sample_yuv_dump(VIDEO_FRAME_S* pVBuf, FILE* pfd)
             }
             //fwrite(TmpBuff, pVBuf->u32Width / 2, 1, pfd);
 
-            CHECK(gbuffer_len-gbuffer_offset > pVBuf->u32Width/2, -1, "buffer is too small\n");
+            CHECK(gbuffer_len-gbuffer_offset >= pVBuf->u32Width/2, -1, "buffer is too small\n");
             memcpy(gbuffer+gbuffer_offset, TmpBuff, pVBuf->u32Width/2);
             gbuffer_offset += pVBuf->u32Width/2;
         }
