@@ -67,7 +67,12 @@ ifeq ($(HIARCH), hi3518ev200)
 	LIBS+=$(PLATFORM)/mpp_lib/lib_hiawb.a
 	LIBS+=$(PLATFORM)/mpp_lib/lib_hiaf.a
 	LIBS+=$(PLATFORM)/mpp_lib/lib_hidefog.a
-	LIBS+=$(wildcard $(PLATFORM)/common_lib/*.a)
+	LIBS+=$(PLATFORM)/common_lib/libcurl.a
+	LIBS+=$(PLATFORM)/common_lib/libdigest.a
+	LIBS+=$(PLATFORM)/common_lib/libixml.a
+	LIBS+=$(PLATFORM)/common_lib/libmd5.a
+	LIBS+=$(PLATFORM)/common_lib/libtinyxml.a
+	LIBS+=$(PLATFORM)/common_lib/libturbojpeg.a
 endif
 
 ifeq ($(HIARCH), hi3516av200)
@@ -84,7 +89,12 @@ ifeq ($(HIARCH), hi3516av200)
 	LIBS+=$(PLATFORM)/mpp_lib/lib_hiawb.a
 	LIBS+=$(PLATFORM)/mpp_lib/lib_hiaf.a
 	LIBS+=$(PLATFORM)/mpp_lib/lib_hidefog.a
-	LIBS+=$(wildcard $(PLATFORM)/common_lib/*.a)
+	LIBS+=$(PLATFORM)/common_lib/libcurl.a
+	LIBS+=$(PLATFORM)/common_lib/libdigest.a
+	LIBS+=$(PLATFORM)/common_lib/libixml.a
+	LIBS+=$(PLATFORM)/common_lib/libmd5.a
+	LIBS+=$(PLATFORM)/common_lib/libtinyxml.a
+	LIBS+=$(PLATFORM)/common_lib/libturbojpeg.a
 endif
 
 export LIBS
