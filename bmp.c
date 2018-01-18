@@ -5,15 +5,19 @@
 #include <malloc.h>
 
 #include "sal_debug.h"
+#include "sal_util.h"
+#include "bmp.h"
 
-#if 0
+#if 1
 void CreateRGBData(unsigned char *rgbout,int width,int height)
 {
     unsigned long  idx=0;
-    for(int j=0;j<height;j++) 
+    int j = 0;
+    int i = 0;
+    for(j=0;j<height;j++) 
     {
         idx=(height-j-1)*width*3;//该值保证所生成的rgb数据逆序存放在rgbbuf中
-        for(int i=0;i<width;i++)
+        for(i=0;i<width;i++)
         {           
             unsigned char r,g,b;
             //生成一个包含红，蓝，绿，黄四种颜色的条纹图案吧
@@ -48,10 +52,13 @@ void CreateRGBData(unsigned char *rgbout,int width,int height)
     }
 }
 
-void MySaveBmp(string  filename,unsigned char *rgbbuf,int width,int height)
+int bmp_create(unsigned char* bgrbuf,int width,int height, unsigned char** outbuffer, unsigned int* outsize)
 {
     MyBITMAPFILEHEADER bfh;
+    memset(&bfh, 0, sizeof(bfh));
     MyBITMAPINFOHEADER bih;
+    memset(&bih, 0, sizeof(bih));
+    
     /* Magic number for file. It does not fit in the header structure due to alignment requirements, so put it outside */
     unsigned short bfType=0x4d42;           
     bfh.bfReserved1 = 0;
@@ -70,31 +77,42 @@ void MySaveBmp(string  filename,unsigned char *rgbbuf,int width,int height)
     bih.biYPelsPerMeter =0;
     bih.biClrUsed = 0;
     bih.biClrImportant = 0;
+    
+    unsigned int size = sizeof(bfType) + sizeof(bfh) + sizeof(bih) + width*height*3;
+    unsigned char* bmp_buffer = (unsigned char*)malloc(size);
+    CHECK(bmp_buffer, -1, "malloc %d bytes failed.\n", size);
+    memset(bmp_buffer, 0, size);
+    
+    int offset = 0;
+    memcpy(bmp_buffer+offset, &bfType, sizeof(bfType));
+    offset += sizeof(bfType);
+    memcpy(bmp_buffer+offset, &bfh, sizeof(bfh));
+    offset += sizeof(bfh);
+    memcpy(bmp_buffer+offset, &bih, sizeof(bih));
+    offset += sizeof(bih);
 
-    FILE *file=NULL;
-    fopen_s(&file,"c:\\MyTest.bmp", "wb");
-    if (!file)
-    {
-        printf("Could not write file\n");
-        return;
-    }
-
-    fwrite(&bfType,sizeof(bfType),1,file);
-    fwrite(&bfh, sizeof(bfh),1 , file);
-    fwrite(&bih, sizeof(bih),1 , file);
-
-    fwrite(rgbbuf,width*height*3,1,file);
-    fclose(file);
+    memcpy(bmp_buffer+offset, bgrbuf, width*height*3);
+    offset += width*height*3;
+    
+    *outbuffer = bmp_buffer;
+    *outsize = size;
+    
+    return 0;
 }
 
-int main()
+int bmp_demo()
 {
     unsigned char* rgbbuffer;
     rgbbuffer=(unsigned char*)malloc(400*400*3);
     memset(rgbbuffer,0,400*400*3);
     CreateRGBData(rgbbuffer,400,400);
-    MySaveBmp("C;\\MyTest.bmp",rgbbuffer,400,400);
+    
+    unsigned char* bmp = NULL;
+    int size = 0;
+    bmp_create(rgbbuffer,400,400, &bmp, &size);
+    util_file_write("test.bmp", bmp, size);
     free(rgbbuffer);
+    free(bmp);
     return 0;
 }
 
