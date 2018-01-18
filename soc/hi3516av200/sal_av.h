@@ -17,6 +17,13 @@ typedef enum SAL_BITRATE_CONTROL_E
     SAL_BITRATE_CONTROL_BUTT,
 }SAL_BITRATE_CONTROL_E;
 
+typedef enum SAL_ENCODE_TYPE_E
+{
+    SAL_ENCODE_TYPE_H264 = 0,
+    SAL_ENCODE_TYPE_H265 = 1,
+    SAL_ENCODE_TYPE_BUTT,
+}SAL_ENCODE_TYPE_E;
+
 typedef struct sal_stream_s
 {
     int enable;
@@ -26,6 +33,7 @@ typedef struct sal_stream_s
     int bitrate;  //kbps
     int gop;
     SAL_BITRATE_CONTROL_E bitrate_ctl;
+    SAL_ENCODE_TYPE_E encode_type;
 }sal_stream_s;
 
 typedef struct sal_video_qp_s
@@ -33,6 +41,7 @@ typedef struct sal_video_qp_s
     int min_qp;
     int max_qp;
     int min_i_qp;
+    int max_i_qp;
 }sal_video_qp_s;
 
 /*
@@ -53,6 +62,8 @@ typedef struct sal_video_s
     sal_stream_s stream[2];
     sal_video_frame_cb cb;
     int rotate; // 0-->none, 1-->90 degree rotation
+    int scale_enable;
+    int smartP_enable;
 }sal_video_s;
 
 

@@ -53,6 +53,8 @@ int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
 
 int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts)
 {
+    if (0 == stream)
+        DBG("stream: %d, len: %d, key: %d, pts: %f\n", stream, len, key, pts);
     return 0;
 }
 
@@ -79,18 +81,20 @@ int main(int argc, char** argv)
     video.stream[0].enable = 1;
     video.stream[0].width = 4000;
     video.stream[0].height = 3000;
-    video.stream[0].framerate = 30;
+    video.stream[0].framerate = 15;
     video.stream[0].bitrate = 6000;
     video.stream[0].gop = 4 * video.stream[0].framerate;
     video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
+    video.stream[0].encode_type = SAL_ENCODE_TYPE_H265;
 
     video.stream[1].enable = 1;
     video.stream[1].width = 640;
     video.stream[1].height = 360;
-    video.stream[1].framerate = 30;
+    video.stream[1].framerate = 15;
     video.stream[1].bitrate = 500;
     video.stream[1].gop = 4 * video.stream[1].framerate;
     video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
+    video.stream[1].encode_type = SAL_ENCODE_TYPE_H264;
     sal_sys_init(&video);
 
     //config of audio

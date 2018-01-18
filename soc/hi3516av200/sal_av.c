@@ -9,6 +9,8 @@
 #define FILE_WRITE_TEST 0
 #define PIPE_WRITE_TEST 0
 
+#define SMART_P_MAX_IDRGOP_SECONDS  (40)
+
 
 ///////////////////////////////
 typedef struct sal_av_args
@@ -27,6 +29,9 @@ typedef struct sal_av_args
     int ext_chn_number;
     int ext_chn_width;
     int ext_chn_height;
+
+    int smartP_enable;
+    int gop_times; // smartp gop放大倍数
 
     // 根据相应驱动ko插入的参数指定
     int lowdelay_enable;  // 低延迟模式
@@ -1242,17 +1247,16 @@ static int venc_set_qp(VENC_CHN VencChn)
         stRcParam.stParamH264Cbr.u32MinQp = 10;
         stRcParam.stParamH264Cbr.u32MaxQp = 51;
     }
-    else if (stVencChnAttr.stRcAttr.enRcMode == VENC_RC_MODE_H264VBR)
+    else if (stVencChnAttr.stRcAttr.enRcMode == VENC_RC_MODE_H265CBR)
     {
-        //if (stRcParam.stParamH264VBR.u32MinIQP < 20)
-        //{
-        //    stRcParam.stParamH264VBR.u32MinIQP = 20;
-        //}
+        stRcParam.stParamH265Cbr.u32MinIQp = 20;
+        stRcParam.stParamH265Cbr.u32MinQp = 10;
+        stRcParam.stParamH265Cbr.u32MaxQp = 51;
     }
     else
     {
-        DBG("Unknown bitrate_ctl: %d\n", stVencChnAttr.stRcAttr.enRcMode);
-        return HI_FAILURE;
+        //DBG("Unknown bitrate_ctl: %d\n", stVencChnAttr.stRcAttr.enRcMode);
+        //return -1;
     }
 
     s32Ret = HI_MPI_VENC_SetRcParam(VencChn, &stRcParam);
@@ -1328,6 +1332,77 @@ static int venc_set_h264(VENC_CHN VencChn, HI_U32  u32Profile)
     return HI_SUCCESS;
 }
 
+static int venc_set_h265(VENC_CHN VencChn, HI_U32  u32Profile)
+{
+    HI_S32 s32Ret = -1;
+    VENC_CHN_ATTR_S stVencChnAttr;
+    memset(&stVencChnAttr, 0, sizeof(stVencChnAttr));
+    VENC_ATTR_H265_S stH265Attr;
+    memset(&stH265Attr, 0, sizeof(stH265Attr));
+    VENC_ATTR_H265_CBR_S    stH265Cbr;
+    memset(&stH265Cbr, 0, sizeof(stH265Cbr));
+    VENC_ATTR_H265_VBR_S    stH265Vbr;
+    memset(&stH265Vbr, 0, sizeof(stH265Vbr));
+
+    sal_stream_s* stream = &g_av_args->video.stream[VencChn];
+    stVencChnAttr.stVeAttr.enType = PT_H265;
+
+    stH265Attr.u32MaxPicWidth = stream->width;
+    stH265Attr.u32MaxPicHeight = stream->height;
+    stH265Attr.u32PicWidth = stream->width;
+    stH265Attr.u32PicHeight = stream->height;
+    stH265Attr.u32BufSize  = HIALIGN(stream->width * stream->height*3/4, 64);
+    /*Hi3516A/D H265只支持MP*/
+    stH265Attr.u32Profile  = 0;
+    stH265Attr.bByFrame = HI_TRUE;
+    memcpy(&stVencChnAttr.stVeAttr.stAttrH265e, &stH265Attr, sizeof(VENC_ATTR_H265_S));
+
+    if (stream->bitrate_ctl == SAL_BITRATE_CONTROL_CBR)
+    {
+        stVencChnAttr.stRcAttr.enRcMode = VENC_RC_MODE_H265CBR;
+        stH265Cbr.u32Gop            = stream->gop;
+        stH265Cbr.u32StatTime       = stream->gop / stream->framerate;
+        stH265Cbr.u32SrcFrmRate  = g_av_args->vi_fps;
+        stH265Cbr.fr32DstFrmRate = stream->framerate;
+        stH265Cbr.u32BitRate = stream->bitrate;
+        stH265Cbr.u32FluctuateLevel = 1;
+        memcpy(&stVencChnAttr.stRcAttr.stAttrH265Cbr, &stH265Cbr, sizeof(VENC_ATTR_H265_CBR_S));
+    }
+    else if (stream->bitrate_ctl == SAL_BITRATE_CONTROL_VBR)
+    {
+        stVencChnAttr.stRcAttr.enRcMode = VENC_RC_MODE_H265VBR;
+        stH265Vbr.u32Gop = stream->gop;
+        stH265Vbr.u32StatTime = stream->gop / stream->framerate;
+        stH265Vbr.u32SrcFrmRate = g_av_args->vi_fps;
+        stH265Vbr.fr32DstFrmRate = stream->framerate;
+        stH265Vbr.u32MinIQp = 25;
+        stH265Vbr.u32MinQp = 25;
+        stH265Vbr.u32MaxQp = 51;
+        stH265Vbr.u32MaxBitRate = stream->bitrate;
+        memcpy(&stVencChnAttr.stRcAttr.stAttrH265Vbr, &stH265Vbr, sizeof(VENC_ATTR_H265_VBR_S));
+    }
+
+    if (0 == VencChn && g_av_args->smartP_enable)
+    {
+        int real_idr_interval = stream->gop*g_av_args->gop_times;
+        stVencChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_SMARTP;
+        stVencChnAttr.stGopAttr.stSmartP.u32BgInterval = real_idr_interval;
+        stVencChnAttr.stGopAttr.stSmartP.s32BgQpDelta = 7;
+        stVencChnAttr.stGopAttr.stSmartP.s32ViQpDelta = 2;
+        // vbr/cbr reset stattime
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32StatTime = real_idr_interval/stream->framerate;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32StatTime = real_idr_interval/stream->framerate;
+    }
+
+    s32Ret = HI_MPI_VENC_CreateChn(VencChn, &stVencChnAttr);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    s32Ret = HI_MPI_VENC_StartRecvPic(VencChn);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    return HI_SUCCESS;
+}
+
 static int venc_bind_vpss(VENC_CHN VencChn, VPSS_CHN VpssChn)
 {
     HI_S32 s32Ret = HI_SUCCESS;
@@ -1375,11 +1450,19 @@ static int venc_set_cfg(VENC_CHN VencChn)
     VPSS_GRP VpssGrp = 0;
     VPSS_CHN VpssChn = VencChn;
 
-    s32Ret = venc_set_h264(VencChn, u32Profile);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    s32Ret = venc_enable_vui(VencChn);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    sal_stream_s* stream = &g_av_args->video.stream[VpssChn];
+    if (SAL_ENCODE_TYPE_H264 == stream->encode_type)
+    {
+        s32Ret = venc_set_h264(VencChn, u32Profile);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+        s32Ret = venc_enable_vui(VencChn);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else
+    {
+        s32Ret = venc_set_h265(VencChn, u32Profile);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
 
     if (0 == VencChn && g_av_args->lowdelay_enable)
     {
@@ -1405,7 +1488,7 @@ static int venc_file_write(int stream_id, const char* file, const void* addr, in
     if (fp[stream_id] == NULL)
     {
         char name[32] = "";
-        sprintf(name, "%s_%d.h264", file, stream_id);
+        sprintf(name, "%s_%d", file, stream_id);
         if (!access(name, F_OK))
             remove(name);
         fp[stream_id] = fopen(name, "a+");
@@ -1483,7 +1566,9 @@ static int venc_write_cb(int stream_id, unsigned long long pts, char *data, int 
 
     if (FILE_WRITE_TEST)
     {
-        venc_file_write(stream_id, "stream", data, len);
+        sal_stream_s* stream = &g_av_args->video.stream[stream_id];
+        const char* path = (SAL_ENCODE_TYPE_H264 == stream->encode_type) ? "stream_264" : "stream_265";
+        venc_file_write(stream_id, path, data, len);
     }
 
     if (PIPE_WRITE_TEST)
@@ -1510,7 +1595,16 @@ static int venc_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* 
 
     HI_U8* frame_addr = pstStream->pstPack->pu8Addr + pstStream->pstPack->u32Offset;
     HI_U32 frame_len = pstStream->pstPack->u32Len - pstStream->pstPack->u32Offset;
-    int isKey = (pstStream->pstPack->DataType.enH264EType == H264E_NALU_ISLICE) ? 1 : 0;
+    int isKey = 0;
+    sal_stream_s* stream = &g_av_args->video.stream[i];
+    if (SAL_ENCODE_TYPE_H264 == stream->encode_type)
+    {
+        isKey = (pstStream->pstPack->DataType.enH264EType == H264E_NALU_ISLICE) ? 1 : 0;
+    }
+    else if (SAL_ENCODE_TYPE_H265 == stream->encode_type)
+    {
+        isKey = (pstStream->pstPack->DataType.enH265EType == H265E_NALU_IDRSLICE) ? 1 : 0;
+    }
 
     s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
@@ -1541,9 +1635,18 @@ static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STA
     {
         HI_U8* frame_addr = pstStream->pstPack[j].pu8Addr + pstStream->pstPack[j].u32Offset;
         HI_U32 frame_len = pstStream->pstPack[j].u32Len - pstStream->pstPack[j].u32Offset;
-        isKey |= (pstStream->pstPack[j].DataType.enH264EType == H264E_NALU_IDRSLICE) ? 1 : 0;
-        //DBG("stream: %d type: %d isKey: %d\n", i, pstStream->pstPack[j].DataType.enH264EType, isKey);
-
+        
+        sal_stream_s* stream = &g_av_args->video.stream[i];
+        if (SAL_ENCODE_TYPE_H264 == stream->encode_type)
+        {
+            isKey |= (pstStream->pstPack[j].DataType.enH264EType == H264E_NALU_IDRSLICE) ? 1 : 0;
+            //DBG("stream: %d type: %d isKey: %d\n", i, pstStream->pstPack[j].DataType.enH264EType, isKey);
+        }
+        else if (SAL_ENCODE_TYPE_H265 == stream->encode_type)
+        {
+            isKey |= (pstStream->pstPack[j].DataType.enH265EType == H265E_NALU_IDRSLICE) ? 1 : 0;
+        }
+        
         memcpy(buffer+buffer_offset, frame_addr, frame_len);
         buffer_offset += frame_len;
     }
@@ -1642,7 +1745,7 @@ static void* venc_thread(void *p)
     return NULL;
 }
 
-static int venc_set_base_args(int channel)
+static int venc_set_h264base_args(int channel)
 {
     CHECK(channel < g_av_args->video_chn_num, HI_FAILURE, "channel [%d] illegal\n", channel);
 
@@ -1659,7 +1762,7 @@ static int venc_set_base_args(int channel)
     {
         DBG("channel: %d, dst_fps[%d] is more than src_fps[%d].reset it\n", channel, dst_fps, src_fps);
         dst_fps = src_fps;
-        g_av_args->video.stream[channel].framerate = g_av_args->vi_fps;;
+        g_av_args->video.stream[channel].framerate = g_av_args->vi_fps;
     }
 
     s32Ret = HI_MPI_VENC_GetChnAttr(channel, &stVencChnAttr);
@@ -1673,7 +1776,7 @@ static int venc_set_base_args(int channel)
         stVencChnAttr.stRcAttr.stAttrH264Cbr.u32StatTime = gop / dst_fps;
         stVencChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRate = src_fps;
         stVencChnAttr.stRcAttr.stAttrH264Cbr.fr32DstFrmRate = dst_fps;
-        stVencChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 0;
+        stVencChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 1;
         stVencChnAttr.stRcAttr.stAttrH264Cbr.u32BitRate = bitrate;
     }
     else
@@ -1690,18 +1793,75 @@ static int venc_set_base_args(int channel)
     s32Ret = HI_MPI_VENC_SetChnAttr(channel, &stVencChnAttr);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
-    VENC_RC_PARAM_S stRcParam;
-    memset(&stRcParam, 0, sizeof(stRcParam));
-    s32Ret = HI_MPI_VENC_GetRcParam(channel, &stRcParam);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    return s32Ret;
+}
 
-    if (enNewRcMode == VENC_RC_MODE_H264CBR)
+static int venc_set_h265base_args(int channel)
+{
+    CHECK(channel < g_av_args->video_chn_num, HI_FAILURE, "channel [%d] illegal\n", channel);
+
+    int s32Ret = 0;
+    VENC_CHN_ATTR_S stVencChnAttr;
+
+    int bitrate = g_av_args->video.stream[channel].bitrate;
+    int bitrate_ctl = g_av_args->video.stream[channel].bitrate_ctl;
+    int gop = g_av_args->video.stream[channel].gop;
+    int src_fps = g_av_args->vi_fps;
+    int dst_fps = g_av_args->video.stream[channel].framerate;
+
+    if (dst_fps > src_fps)
     {
-        //DBG("s32MaxReEncodeTimes: %d\n", stRcParam.stParamH264Cbr.s32MaxReEncodeTimes);
-        stRcParam.stParamH264Cbr.s32MaxReEncodeTimes = 0;
+        DBG("channel: %d, dst_fps[%d] is more than src_fps[%d].reset it\n", channel, dst_fps, src_fps);
+        dst_fps = src_fps;
+        g_av_args->video.stream[channel].framerate = g_av_args->vi_fps;
     }
 
-    s32Ret = HI_MPI_VENC_SetRcParam(channel, &stRcParam);
+    s32Ret = HI_MPI_VENC_GetChnAttr(channel, &stVencChnAttr);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    VENC_RC_MODE_E enNewRcMode = (bitrate_ctl == SAL_BITRATE_CONTROL_VBR) ? VENC_RC_MODE_H265VBR : VENC_RC_MODE_H265CBR;
+    stVencChnAttr.stRcAttr.enRcMode = enNewRcMode;
+    if (enNewRcMode == VENC_RC_MODE_H265CBR)
+    {
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32Gop = gop;
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32StatTime = gop / dst_fps;
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRate = src_fps;
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.fr32DstFrmRate = dst_fps;
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32FluctuateLevel = 1;
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = bitrate;
+    }
+    else
+    {
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32Gop = gop;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32StatTime = gop / dst_fps;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32SrcFrmRate = src_fps;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.fr32DstFrmRate = dst_fps;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32MinQp = 25;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32MaxQp = 51;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32MaxBitRate = bitrate;
+    }
+
+    if (0 == channel && g_av_args->smartP_enable)
+    {
+        if (gop*g_av_args->gop_times != SMART_P_MAX_IDRGOP_SECONDS*dst_fps)
+        {
+            g_av_args->gop_times = SMART_P_MAX_IDRGOP_SECONDS*dst_fps/gop;
+            DBG("gop: %d, dst_fps: %d, gop_times: %d\n", gop, dst_fps, g_av_args->gop_times);
+        }
+
+        int real_idr_interval = gop*g_av_args->gop_times;
+        stVencChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_SMARTP;
+        stVencChnAttr.stGopAttr.stSmartP.u32BgInterval = real_idr_interval;
+        stVencChnAttr.stGopAttr.stSmartP.s32BgQpDelta = 7;
+        stVencChnAttr.stGopAttr.stSmartP.s32ViQpDelta = 2;
+        // vbr/cbr reset stattime
+        int stattime = (real_idr_interval/dst_fps > 60) ? 60 : real_idr_interval/dst_fps; // max 60s
+        stVencChnAttr.stRcAttr.stAttrH265Cbr.u32StatTime = stattime;
+        stVencChnAttr.stRcAttr.stAttrH265Vbr.u32StatTime = stattime;
+        //DBG("gop: %d, dst_fps: %d, u32StatTime: %d\n", gop, dst_fps, stattime);
+    }
+
+    s32Ret = HI_MPI_VENC_SetChnAttr(channel, &stVencChnAttr);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     return s32Ret;
@@ -1753,6 +1913,15 @@ int sal_sys_init(sal_video_s* video)
         {
             g_av_args->video_chn_num++;
         }
+    }
+    
+    g_av_args->smartP_enable = video->smartP_enable;
+    g_av_args->gop_times = 20;
+    int gop = g_av_args->video.stream[0].gop;
+    int dst_fps = g_av_args->video.stream[0].framerate;
+    if (gop*g_av_args->gop_times != SMART_P_MAX_IDRGOP_SECONDS*dst_fps)
+    {
+        g_av_args->gop_times = SMART_P_MAX_IDRGOP_SECONDS*dst_fps/gop;
     }
 
     CHECK(g_av_args->video_chn_num > 0, HI_FAILURE, "error: video chn num is %d\n", g_av_args->video_chn_num);
@@ -1989,16 +2158,23 @@ int sal_video_framerate_set(int stream, int framerate)
 */
 
     int s32Ret = -1;
-    ISP_PUB_ATTR_S stPubAttr;
-    memset(&stPubAttr, 0, sizeof(stPubAttr));
+
 
     pthread_mutex_lock(&g_av_args->mutex);
-
+    
     DBG("stream: %d, old framerate: %d, new framerate: %d\n", stream, g_av_args->video.stream[stream].framerate, framerate);
     g_av_args->video.stream[stream].framerate = framerate;
 
-    s32Ret = venc_set_base_args(stream);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        s32Ret = venc_set_h264base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        s32Ret = venc_set_h265base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
 
@@ -2035,9 +2211,17 @@ int sal_video_bitrate_set(int stream, SAL_BITRATE_CONTROL_E bitrate_ctl, int bit
 
     g_av_args->video.stream[stream].bitrate_ctl = bitrate_ctl;
     g_av_args->video.stream[stream].bitrate = bitrate;
-
-    s32Ret = venc_set_base_args(stream);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        s32Ret = venc_set_h264base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        s32Ret = venc_set_h265base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
     return 0;
@@ -2053,9 +2237,17 @@ int sal_video_lbr_set(int stream, SAL_BITRATE_CONTROL_E bitrate_ctl, int bitrate
 
     g_av_args->video.stream[stream].bitrate_ctl = bitrate_ctl;
     g_av_args->video.stream[stream].bitrate = bitrate;
-
-    s32Ret = venc_set_base_args(stream);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        s32Ret = venc_set_h264base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        s32Ret = venc_set_h265base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
     return 0;
@@ -2070,9 +2262,16 @@ int sal_video_gop_set(int stream, int gop)
     int s32Ret = 0;
 
     g_av_args->video.stream[stream].gop = gop;
-
-    s32Ret = venc_set_base_args(stream);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        s32Ret = venc_set_h264base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        s32Ret = venc_set_h265base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
     return 0;
@@ -2220,10 +2419,21 @@ int sal_video_cbr_qp_set(int channel, sal_video_qp_s* qp_args)
     VENC_RC_PARAM_S stRcParam;
     s32Ret = HI_MPI_VENC_GetRcParam(channel, &stRcParam);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    stRcParam.stParamH264Cbr.u32MinIQp = qp_args->min_i_qp;
-    stRcParam.stParamH264Cbr.u32MinQp = qp_args->min_qp;
-    stRcParam.stParamH264Cbr.u32MaxQp = qp_args->max_qp;
+    
+    if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        stRcParam.stParamH264Cbr.u32MinIQp = qp_args->min_i_qp;
+        stRcParam.stParamH264Cbr.u32MaxIQp = qp_args->max_i_qp;
+        stRcParam.stParamH264Cbr.u32MinQp = qp_args->min_qp;
+        stRcParam.stParamH264Cbr.u32MaxQp = qp_args->max_qp;
+    }
+    else if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        stRcParam.stParamH265Cbr.u32MinIQp = qp_args->min_i_qp;
+        stRcParam.stParamH265Cbr.u32MaxIQp = qp_args->max_i_qp;
+        stRcParam.stParamH265Cbr.u32MinQp = qp_args->min_qp;
+        stRcParam.stParamH265Cbr.u32MaxQp = qp_args->max_qp;
+    }
 
     s32Ret = HI_MPI_VENC_SetRcParam(channel, &stRcParam);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
@@ -2247,10 +2457,21 @@ int sal_video_cbr_qp_get(int channel, sal_video_qp_s* qp_args)
     VENC_RC_PARAM_S stRcParam;
     s32Ret = HI_MPI_VENC_GetRcParam(channel, &stRcParam);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    qp_args->min_i_qp = stRcParam.stParamH264Cbr.u32MinIQp;
-    qp_args->min_qp = stRcParam.stParamH264Cbr.u32MinQp;
-    qp_args->max_qp = stRcParam.stParamH264Cbr.u32MaxQp;
+    
+    if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        qp_args->min_i_qp = stRcParam.stParamH264Cbr.u32MinIQp;
+        qp_args->max_i_qp = stRcParam.stParamH264Cbr.u32MaxIQp;
+        qp_args->min_qp = stRcParam.stParamH264Cbr.u32MinQp;
+        qp_args->max_qp = stRcParam.stParamH264Cbr.u32MaxQp;
+    }
+    else if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        qp_args->min_i_qp = stRcParam.stParamH265Cbr.u32MinIQp;
+        qp_args->max_i_qp = stRcParam.stParamH265Cbr.u32MaxIQp;
+        qp_args->min_qp = stRcParam.stParamH265Cbr.u32MinQp;
+        qp_args->max_qp = stRcParam.stParamH265Cbr.u32MaxQp;
+    }
 
     return s32Ret;
 }

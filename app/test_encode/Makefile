@@ -1,39 +1,25 @@
 
+export TOP_DIR=../../
 include ../../Rules.make
 
-CFLAGS := -Wall -g -I./
-CFLAGS += -I../../
-CFLAGS += -I../../opensource
-CFLAGS += -I../../libbase
-CFLAGS += -I../../libdigest
-CFLAGS += -I../../libmd5
-CFLAGS += -I../../libmodule
-CFLAGS += -I../../libtinyxml
-
-
-ifeq ($(HIARCH), hi3518ev200)
-	CFLAGS += -I../../soc/hi3518ev200
-endif
-
-ifeq ($(HIARCH), hi3516av200)
-	CFLAGS += -I../../soc/hi3516av200
-endif
-
-MPI_LIBS := libipc.so
-#MPI_LIBS := ../../lib/libipc.a
+MPI_LIBS := $(TOP_DIR)/libipc.so
 SRC=$(wildcard *.c)
-OBJS=$(patsubst %.c,%.o,$(SRC))
+SRC += $(wildcard *.cpp)
+OBJS := $(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SRC)))
 
 TARGET=test_encode
 $(TARGET): $(OBJS)
-	cp ../../lib/libipc.so ./ -af
-	$(LINK) -lpthread -lm -ldl -o $@ $^ $(MPI_LIBS)
+	$(LINK) -L$(TOP_DIR) -lipc -lpthread -lm -ldl -o $@ $^
 	$(STRIP) $@
-	cp test_encode /install/nfs/test/test_encode/ -af
-	cp ../../lib/libipc.so /install/nfs/test/test_encode/ -af
+	cp $@ /install/nfs/test/test_encode/ -af
+	cp $(MPI_LIBS) /install/nfs/test/test_encode/ -af
 
+%.o: %.cpp
+	$(CXX) -c $(CFLAGS) -o $@ $<
+	@echo
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
+	@echo
 
 clean:
 	rm -f $(TARGET)
