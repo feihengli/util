@@ -15,7 +15,6 @@ $(TARGETS):$(OBJS)
 	$(AR) rcs $@ $^
 sensor_lib:
 	make -C $(SENSOR_PATH)
-	cp $(SENSOR_PATH)/*.a ./libsns.a -af
 
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
@@ -25,4 +24,4 @@ sensor_lib:
 
 clean:
 	make -C $(SENSOR_PATH) clean
-	rm -r $(TARGETS);rm *.o *.a
+	rm -r $(TARGETS);rm *.o

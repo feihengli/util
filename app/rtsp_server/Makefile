@@ -9,10 +9,10 @@ OBJS := $(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SRC)))
 
 TARGET=rtsp_server
 $(TARGET): $(OBJS)
-	$(LINK) -lpthread -lm -ldl -o $@ $^ $(MPI_LIBS)
+	$(LINK) -L$(TOP_DIR) -lipc -lpthread -lm -ldl -o $@ $^
 	$(STRIP) $@
-	#cp $@ /install/nfs/test/test_encode/ -af
-	#cp ../../lib/libipc.so /install/nfs/test/test_encode/ -af
+	cp $@ /install/nfs/test/test_encode/ -af
+	cp $(MPI_LIBS) /install/nfs/test/test_encode/ -af
 
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<

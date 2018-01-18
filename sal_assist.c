@@ -11,16 +11,18 @@
 #include "sal_lbr.h"
 #include "sal_af.h"
 #include "sal_jpeg.h"
+#include "sal_draw_rectangle.h"
 
 /*
+* 解决编译问题
 * 此函数只是为了生成libipc.so的时候，把函数符号链接进libipc.so。
 * 如果不调用，那么生成libipc.so的时候，会自动剔除掉函数符号。暂不明原因
 */
 
-static int sal_assist()
+int sal_assist()
 {
 	sal_jpeg_init(NULL);
-
+    sal_dr_init();
 	
 	return 0;
 }

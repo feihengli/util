@@ -218,7 +218,6 @@ static int jpeg_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* 
 
     HI_U8* frame_addr = pstStream->pstPack->pu8Addr + pstStream->pstPack->u32Offset;
     HI_U32 frame_len = pstStream->pstPack->u32Len - pstStream->pstPack->u32Offset;
-    int isKey = (pstStream->pstPack->DataType.enH264EType == H264E_NALU_ISLICE) ? 1 : 0;
 
     //s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey);
     //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);

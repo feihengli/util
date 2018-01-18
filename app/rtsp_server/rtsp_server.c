@@ -15,7 +15,7 @@
 #include "sal_debug.h"
 #include "sal_frame_pool.h"
 #include "sal_rtsp_server.h"
-#include "sal_osd_fullscreen.h"
+#include "sal_draw_rectangle.h"
 
 static int test_exit = 0;
 
@@ -143,15 +143,11 @@ int main(int argc, char** argv)
     DBG("sys audio init done.\n");*/
     
     
-    //jpeg
-    ret = sal_jpeg_init(get_jpeg_frame_cb);
+    ret = sal_dr_init();
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     
    /* ret = sal_osd_init();
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);*/
-    
-    ret = sal_osd_fullscreen_init();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);

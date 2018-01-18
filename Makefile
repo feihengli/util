@@ -22,7 +22,8 @@ $(TARGET): $(OBJS)
 	@echo
 
 clean:
-	make -C $(PLATFORM) clean
-	@echo
 	rm -f $(TARGET)
 	rm -f *.o
+	make -C $(PLATFORM) clean
+	@echo
+	

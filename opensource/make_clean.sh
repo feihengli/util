@@ -9,6 +9,9 @@ rm -rf libixml-1.0
 #libjpeg.a
 rm -rf jpeg-8c
 
+#libturbojpeg.a
+rm -rf libjpeg-turbo-1.5.3
+
 #libmd5.a
 rm -rf libmd5
 

@@ -33,6 +33,15 @@ make
 cp ./.libs/libjpeg.a ../ -af
 cd ../
 
+#libturbojpeg.a
+rm -rf libjpeg-turbo-1.5.3
+tar -xzvf libjpeg-turbo-1.5.3.tar.gz
+cd ./libjpeg-turbo-1.5.3;
+./configure --host=${COMPILE}
+make
+cp ./.libs/libturbojpeg.a ../ -af
+cd ../
+
 #libmd5.a
 rm -rf libmd5
 tar -xzvf libmd5.tar.gz

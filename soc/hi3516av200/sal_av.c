@@ -1632,7 +1632,7 @@ static void* venc_thread(void *p)
         }
         else if (s32Ret == 0)
         {
-            DBG("get venc stream time out.\n");
+            //DBG("get venc stream time out.\n");
             continue;
         }
 

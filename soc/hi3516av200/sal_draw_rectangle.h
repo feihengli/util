@@ -1,6 +1,6 @@
 
-#ifndef sal_vgs_h__
-#define sal_vgs_h__
+#ifndef sal_draw_rectangle_h__
+#define sal_draw_rectangle_h__
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -8,14 +8,8 @@ extern "C"{
 #endif
 #endif
 
-typedef struct rectangle_s
-{
-    int x;
-    int y;
-    int width;
-    int height;
-}rectangle_s;
 
+int sal_dr_init();
 
 
 

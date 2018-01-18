@@ -63,10 +63,10 @@ int util_file_size(char* path);
  输出参数: buf 输出缓存
  返 回 值: 成功返回0,失败返回小于0
 */
-int util_file_read(char* path, char* buf, int len);
+int util_file_read(const char* path, unsigned char* buf, int len);
 
 
-int util_file_write(char* path, char* buf, int len);
+int util_file_write(const char* path, unsigned char* buf, int len);
 
 #ifdef __cplusplus
 #if __cplusplus

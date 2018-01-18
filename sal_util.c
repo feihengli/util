@@ -75,7 +75,7 @@ int util_file_size(char* path)
 }
 
 //读取指定大小
-int util_file_read(char* path, char* buf, int len)
+int util_file_read(const char* path, unsigned char* buf, int len)
 {
     CHECK(path, -1, "invalid parameter with: %#x\n", path);
 
@@ -95,7 +95,7 @@ int util_file_read(char* path, char* buf, int len)
 }
 
 //写指定大小
-int util_file_write(char* path, char* buf, int len)
+int util_file_write(const char* path, unsigned char* buf, int len)
 {
     CHECK(path, -1, "invalid parameter with: %#x\n", path);
     CHECK(buf, -1, "invalid parameter with: %#x\n", buf);
