@@ -55,7 +55,7 @@ typedef struct sal_video_qp_s
             key 关键帧标志
  返 回 值: 成功返回0,失败返回小于0
 */
-typedef int (*sal_video_frame_cb)(int stream, char *frame, unsigned long len, int key, double pts);
+typedef int (*sal_video_frame_cb)(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type);
 
 typedef struct sal_video_s
 {

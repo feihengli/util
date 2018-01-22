@@ -9,7 +9,7 @@ extern "C" {
 
 #include "sal_standard.h"
 
-typedef struct
+typedef struct RTSP_INTERLEAVED_FRAME
 {
     unsigned char flag;
     unsigned char channel;
@@ -33,7 +33,7 @@ RTP_FIXED_HEADER
 
 ******************************************************************/
 
-typedef struct
+typedef struct RTP_FIXED_HEADER
 {
     /* byte 0 */
     unsigned char csrc_len:4; /* CC expect 0 */
@@ -51,6 +51,83 @@ typedef struct
     unsigned long ssrc; /* stream number is used here. */
 } RTP_FIXED_HEADER;/*12 bytes*/
 
+//only for h265
+enum NalUnitType  
+{  
+    NAL_UNIT_CODED_SLICE_TRAIL_N = 0,   // 0  
+    NAL_UNIT_CODED_SLICE_TRAIL_R,   // 1  
+
+    NAL_UNIT_CODED_SLICE_TSA_N,     // 2  
+    NAL_UNIT_CODED_SLICE_TLA,       // 3   // Current name in the spec: TSA_R  
+
+    NAL_UNIT_CODED_SLICE_STSA_N,    // 4  
+    NAL_UNIT_CODED_SLICE_STSA_R,    // 5  
+
+    NAL_UNIT_CODED_SLICE_RADL_N,    // 6  
+    NAL_UNIT_CODED_SLICE_DLP,       // 7 // Current name in the spec: RADL_R  
+
+    NAL_UNIT_CODED_SLICE_RASL_N,    // 8  
+    NAL_UNIT_CODED_SLICE_TFD,       // 9 // Current name in the spec: RASL_R  
+
+    NAL_UNIT_RESERVED_10,  
+    NAL_UNIT_RESERVED_11,  
+    NAL_UNIT_RESERVED_12,  
+    NAL_UNIT_RESERVED_13,  
+    NAL_UNIT_RESERVED_14,  
+    NAL_UNIT_RESERVED_15,
+    NAL_UNIT_CODED_SLICE_BLA,       // 16   // Current name in the spec: BLA_W_LP  
+    NAL_UNIT_CODED_SLICE_BLANT,     // 17   // Current name in the spec: BLA_W_DLP  
+    NAL_UNIT_CODED_SLICE_BLA_N_LP,  // 18  
+    NAL_UNIT_CODED_SLICE_IDR,       // 19  // Current name in the spec: IDR_W_DLP  
+    NAL_UNIT_CODED_SLICE_IDR_N_LP,  // 20  
+    NAL_UNIT_CODED_SLICE_CRA,       // 21  
+    NAL_UNIT_RESERVED_22,  
+    NAL_UNIT_RESERVED_23,  
+
+    NAL_UNIT_RESERVED_24,  
+    NAL_UNIT_RESERVED_25,  
+    NAL_UNIT_RESERVED_26,  
+    NAL_UNIT_RESERVED_27,  
+    NAL_UNIT_RESERVED_28,  
+    NAL_UNIT_RESERVED_29,  
+    NAL_UNIT_RESERVED_30,  
+    NAL_UNIT_RESERVED_31,  
+
+    NAL_UNIT_VPS,                   // 32  
+    NAL_UNIT_SPS,                   // 33  
+    NAL_UNIT_PPS,                   // 34  
+    NAL_UNIT_ACCESS_UNIT_DELIMITER, // 35  
+    NAL_UNIT_EOS,                   // 36  
+    NAL_UNIT_EOB,                   // 37  
+    NAL_UNIT_FILLER_DATA,           // 38  
+    NAL_UNIT_SEI,                   // 39 Prefix SEI  
+    NAL_UNIT_SEI_SUFFIX,            // 40 Suffix SEI  
+    NAL_UNIT_RESERVED_41,  
+    NAL_UNIT_RESERVED_42,  
+    NAL_UNIT_RESERVED_43,  
+    NAL_UNIT_RESERVED_44,  
+    NAL_UNIT_RESERVED_45,  
+    NAL_UNIT_RESERVED_46,  
+    NAL_UNIT_RESERVED_47,  
+    NAL_UNIT_UNSPECIFIED_48,  
+    NAL_UNIT_UNSPECIFIED_49,  
+    NAL_UNIT_UNSPECIFIED_50,  
+    NAL_UNIT_UNSPECIFIED_51,  
+    NAL_UNIT_UNSPECIFIED_52,  
+    NAL_UNIT_UNSPECIFIED_53,  
+    NAL_UNIT_UNSPECIFIED_54,  
+    NAL_UNIT_UNSPECIFIED_55,  
+    NAL_UNIT_UNSPECIFIED_56,  
+    NAL_UNIT_UNSPECIFIED_57,  
+    NAL_UNIT_UNSPECIFIED_58,  
+    NAL_UNIT_UNSPECIFIED_59,  
+    NAL_UNIT_UNSPECIFIED_60,  
+    NAL_UNIT_UNSPECIFIED_61,  
+    NAL_UNIT_UNSPECIFIED_62,  
+    NAL_UNIT_UNSPECIFIED_63,  
+    NAL_UNIT_INVALID,  
+}; 
+
 /******************************************************************
 NALU_HEADER
 +---------------+
@@ -59,7 +136,7 @@ NALU_HEADER
 |F|NRI|  Type   |
 +---------------+
 ******************************************************************/
-typedef struct
+typedef struct NALU_HEADER
 {
     //byte 0
     unsigned char TYPE:5;
@@ -67,6 +144,18 @@ typedef struct
     unsigned char F:1;
 } NALU_HEADER; /* 1 byte */
 
+/******************************************************************
+NALU_HEADER_H265
++---------------+---------------+
+|0|1|2|3|4|5|6|7|0|1|2|3|4|5|6|7|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|F|    Type   |  LayerID  | Tid |
++---------------+---------------+
+******************************************************************/
+typedef struct NALU_HEADER_H265
+{
+    unsigned char buffer[2];
+} NALU_HEADER_H265; /* 2 byte */
 
 /******************************************************************
 FU_INDICATOR
@@ -76,7 +165,7 @@ FU_INDICATOR
 |F|NRI|  Type   |
 +---------------+
 ******************************************************************/
-typedef struct
+typedef struct FU_INDICATOR
 {
     //byte 0
     unsigned char TYPE:5;
@@ -93,7 +182,7 @@ FU_HEADER
 |S|E|R|  Type   |
 +---------------+
 ******************************************************************/
-typedef struct
+typedef struct FU_HEADER
 {
     //byte 0
     unsigned char TYPE:5;
@@ -102,13 +191,31 @@ typedef struct
     unsigned char S:1;
 } FU_HEADER; /* 1 byte */
 
-typedef struct
+/******************************************************************
+FU_HEADER_H265
++---------------+
+|0|1|2|3|4|5|6|7|
++-+-+-+-+-+-+-+-+
+|S|E|    Type   |
++---------------+
+******************************************************************/
+typedef struct FU_HEADER_H265
+{
+    //byte 0
+    unsigned char TYPE:6;
+    unsigned char E:1;
+    unsigned char S:1;
+} FU_HEADER_H265; /* 1 byte */
+
+typedef struct NALU_t
 {
     int startcodeprefix_len;      //! 4 for parameter sets and first slice in picture, 3 for everything else (suggested)
     unsigned len;                 //! Length of the NAL unit (Excluding the start code, which does not belong to the NALU)
     unsigned max_size;            //! Nal Unit Buffer size
     int forbidden_bit;            //! should be always FALSE
-    int nal_reference_idc;        //! NALU_PRIORITY_xxxx
+    int nal_reference_idc;        //! NALU_PRIORITY_xxxx  only for h264
+    int nal_layer_id;             //! NALU_PRIORITY_xxxx  only for h265
+    int nal_tid;                   //! NALU_PRIORITY_xxxx only for h265
     int nal_unit_type;            //! NALU_TYPE_xxxx
     char *buf;                    //! contains the first byte followed by the EBSP
     unsigned short lost_packets;  //! true, if packet loss is detected
@@ -116,10 +223,11 @@ typedef struct
 
 #define UDP_MAX_SIZE (1399)
 #define H264 (96)
+#define H265 (96)
 #define AMR (97)
 #define G711 (0)
 
-typedef struct
+typedef struct RTP_SPLIT_S
 {
     unsigned char* pu8Buf;        //存放所有RTP包的buffer
     unsigned int u32BufSize;      //buffer的大小
@@ -128,7 +236,7 @@ typedef struct
     unsigned int* pU32SegmentSize;//每一个RTP包的大小
 } RTP_SPLIT_S;
 
-typedef struct
+typedef struct RTP_KEY_S
 {
     int sps_offset;
     int sps_len;
@@ -193,6 +301,20 @@ int rtp_h264_split(unsigned char* _pu8Frame, unsigned int _u32FrameSize);
 int rtp_h264_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
                        unsigned short* _pu16SeqNumber, unsigned int _u32Timestamp,
                        RTP_SPLIT_S* _pRetRtpSplit);
+
+/*
+ 函 数 名: rtp_h265_alloc
+ 功能描述: RTP封装h265的视频帧，每个RTP包都包含RTP OVER TCP的交错帧头
+ 输入参数: _pu8Frame 视频帧
+            _u32FrameSize 帧大小
+            _pu16SeqNumber RTP包的序号
+            _u32Timestamp RTP包的时间戳
+ 输出参数: _pRetRtpSplit 保存RTP封包的结果
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int rtp_h265_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
+                   unsigned short* _pu16SeqNumber, unsigned int _u32Timestamp,
+                   RTP_SPLIT_S* _pRetRtpSplit);
 
 /*
  函 数 名: rtp_free

@@ -59,15 +59,25 @@ int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
     return 0;
 }
 
-int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts)
+int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type)
 {
+    FRAME_TYPE_E type = FRAME_TYPE_INVALID;
+    if (encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        type = FRAME_TYPE_H264;
+    }
+    else if (encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        type = FRAME_TYPE_H265;
+    }
+    
     if (stream == 0 && gHndMainFramePool)
     {
-        frame_pool_add(gHndMainFramePool, frame, len, FRAME_TYPE_H264, key, pts);
+        frame_pool_add(gHndMainFramePool, frame, len, type, key, pts);
     }
     else if (stream == 1 && gHndSubFramePool)
     {
-        frame_pool_add(gHndSubFramePool, frame, len, FRAME_TYPE_H264, key, pts);
+        frame_pool_add(gHndSubFramePool, frame, len, type, key, pts);
     }
 
     return 0;
@@ -115,6 +125,7 @@ int main(int argc, char** argv)
     video.stream[0].bitrate = 2500;
     video.stream[0].gop = 2 * video.stream[0].framerate;
     video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
+    video.stream[0].encode_type = SAL_ENCODE_TYPE_H264;
 
     video.stream[1].enable = 1;
     video.stream[1].width = 640;
@@ -123,6 +134,7 @@ int main(int argc, char** argv)
     video.stream[1].bitrate = 500;
     video.stream[1].gop = 2 * video.stream[1].framerate;
     video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
+    video.stream[1].encode_type = SAL_ENCODE_TYPE_H265;
     ret = sal_sys_init(&video);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys video init done.\n");
@@ -151,7 +163,9 @@ int main(int argc, char** argv)
 
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
-
+    
+    bmp_demo();
+    
     while (!test_exit)
     {
         usleep(1);

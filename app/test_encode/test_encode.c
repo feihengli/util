@@ -51,7 +51,7 @@ int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
     return 0;
 }
 
-int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts)
+int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type)
 {
     if (0 == stream)
         DBG("stream: %d, len: %d, key: %d, pts: %f\n", stream, len, key, pts);

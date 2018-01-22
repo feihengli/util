@@ -12,7 +12,8 @@ extern "C"{
 
 typedef enum FRAME_TYPE_E
 {
-    FRAME_TYPE_H264 = 0,
+    FRAME_TYPE_INVALID = 0,
+    FRAME_TYPE_H264,
     FRAME_TYPE_H265,
     FRAME_TYPE_G711A,    //alaw
     FRAME_TYPE_G711U,    //ulaw
@@ -104,24 +105,51 @@ int frame_pool_release(handle hndReader, frame_info_s* pstFrameInfo);
 
 /*
  函 数 名: frame_pool_sps_get
- 功能描述: 从帧池获取h264视频帧的SPS
+ 功能描述: 从帧池获取h264/h265视频帧的SPS
  输入参数: hndReader 注册获得的句柄
  输出参数: out 输出SPS
             len 输出SPS的长度
  返 回 值: 成功返回0,失败返回小于0
 */
-int frame_pool_sps_get(handle hndReader, char** out, int* len);
+int frame_pool_sps_get(handle hndReader, unsigned char** out, int* len);
 
 /*
  函 数 名: frame_pool_pps_get
- 功能描述: 从帧池获取h264视频帧的PPS
+ 功能描述: 从帧池获取h264/h265视频帧的PPS
  输入参数: hndReader 注册获得的句柄
  输出参数: out 输出PPS
             len 输出PPS的长度
  返 回 值: 成功返回0,失败返回小于0
 */
-int frame_pool_pps_get(handle hndReader, char** out, int* len);
+int frame_pool_pps_get(handle hndReader, unsigned char** out, int* len);
 
+/*
+ 函 数 名: frame_pool_vps_get
+ 功能描述: 从帧池获取h265视频帧的VPS
+ 输入参数: hndReader 注册获得的句柄
+ 输出参数: out 输出VPS
+            len 输出VPS的长度
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int frame_pool_vps_get(handle hndReader, unsigned char** out, int* len);
+
+/*
+ 函 数 名: frame_pool_vframe_type_get
+ 功能描述: 从帧池获取视频帧的类型
+ 输入参数: hndReader 注册获得的句柄
+ 输出参数: out 输出帧类型
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int frame_pool_vframe_type_get(handle hndReader, FRAME_TYPE_E* out);
+
+/*
+ 函 数 名: frame_pool_aframe_type_get
+ 功能描述: 从帧池获取音频帧的类型
+ 输入参数: hndReader 注册获得的句柄
+ 输出参数: out 输出帧类型
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int frame_pool_aframe_type_get(handle hndReader, FRAME_TYPE_E* out);
 
 #ifdef __cplusplus
 #if __cplusplus

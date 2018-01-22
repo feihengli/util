@@ -55,6 +55,8 @@ typedef struct RTSP_SERVER_S
     unsigned int u32SpsSize;
     unsigned char au8Pps[64];
     unsigned int u32PpsSize;
+    unsigned char au8Vps[64];
+    unsigned int u32VpsSize;
 
     //rtp
     unsigned int u32LastAVUniqueIndex;
@@ -282,21 +284,53 @@ static int __SessionIsValid(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     return -1;
 }
 
-static char* __MakeSPS(unsigned char* _pu8Sps, unsigned int _u32SpsSize, unsigned char* _pu8Pps, unsigned int _u32PpsSize)
+static char* __MakeSPS(unsigned char* buffer, unsigned int size)
 {
     int s32Ret;
     char* szRet;
 
-    char* szFormat = "%s,%s";
-    char* szSpsBase64 = MY_Base64Encode(_pu8Sps, _u32SpsSize);
-    char* szPpsBase64 = MY_Base64Encode(_pu8Pps, _u32PpsSize);
+    char* szFormat = "%s";
+    char* szBase64 = MY_Base64Encode(buffer, size);
 
-    s32Ret = _CheckBuf(szFormat, szSpsBase64, szPpsBase64);
+    s32Ret = _CheckBuf(szFormat, szBase64);
     szRet = (char*)mem_malloc(s32Ret + 1);
-    sprintf(szRet, szFormat, szSpsBase64, szPpsBase64);
+    sprintf(szRet, szFormat, szBase64);
 
-    free(szPpsBase64);
-    free(szSpsBase64);
+    free(szBase64);
+
+    return szRet;
+}
+
+static char* __MakePPS(unsigned char* buffer, unsigned int size)
+{
+    int s32Ret;
+    char* szRet;
+
+    char* szFormat = "%s";
+    char* szBase64 = MY_Base64Encode(buffer, size);
+
+    s32Ret = _CheckBuf(szFormat, szBase64);
+    szRet = (char*)mem_malloc(s32Ret + 1);
+    sprintf(szRet, szFormat, szBase64);
+
+    free(szBase64);
+
+    return szRet;
+}
+
+static char* __MakeVPS(unsigned char* buffer, unsigned int size)
+{
+    int s32Ret;
+    char* szRet;
+
+    char* szFormat = "%s";
+    char* szBase64 = MY_Base64Encode(buffer, size);
+
+    s32Ret = _CheckBuf(szFormat, szBase64);
+    szRet = (char*)mem_malloc(s32Ret + 1);
+    sprintf(szRet, szFormat, szBase64);
+
+    free(szBase64);
 
     return szRet;
 }
@@ -318,7 +352,8 @@ static char* __MakePLI(unsigned char* _pu8Sps)
     return szRet;
 }
 
-static char* __MakeSdp(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize, unsigned char* _pu8Pps, unsigned int _u32PpsSize)
+static char* __MakeSdpH264(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize
+                        , unsigned char* _pu8Pps, unsigned int _u32PpsSize)
 {
     char* szRet;
     int s32Ret;
@@ -331,7 +366,7 @@ static char* __MakeSdp(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32Sps
         "a=tool:libavformat 56.15.102\r\n"
         "m=video 0 RTP/AVP 96\r\n"
         "a=rtpmap:96 H264/90000\r\n"
-        "a=fmtp:96 packetization-mode=1; sprop-parameter-sets=%s; profile-level-id=%s\r\n"
+        "a=fmtp:96 packetization-mode=1; sprop-parameter-sets=%s,%s; profile-level-id=%s\r\n"
         "a=control:streamid=0\r\n"
         "m=audio 0 RTP/AVP 8\r\n"
         "a=rtpmap:8 pcma/8000/1\r\n"
@@ -345,15 +380,135 @@ static char* __MakeSdp(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32Sps
 */
         "a=control:streamid=1\r\n"
         ;
-    char* szSPS = __MakeSPS(_pu8Sps, _u32SpsSize, _pu8Pps, _u32PpsSize);
+
+    char* szSPS = __MakeSPS(_pu8Sps, _u32SpsSize);
+    char* szPPS = __MakePPS(_pu8Pps, _u32PpsSize);
     char* szPLI = __MakePLI(_pu8Sps);
 
-    s32Ret = _CheckBuf(szFormat, _szIp, szSPS, szPLI);
+    s32Ret = _CheckBuf(szFormat, _szIp, szSPS, szPPS, szPLI);
     szRet = (char*)mem_malloc(s32Ret + 1);
-    sprintf(szRet, szFormat, _szIp, szSPS, szPLI);
+    sprintf(szRet, szFormat, _szIp, szSPS, szPPS, szPLI);
 
     mem_free(szPLI);
+    mem_free(szPPS);
     mem_free(szSPS);
+    return szRet;
+}
+
+static unsigned int __RemoveH264or5EmulationBytes(unsigned char* to, unsigned int toMaxSize,unsigned char const* from, unsigned int fromSize) 
+{
+    unsigned toSize = 0;
+    unsigned i = 0;
+    while (i < fromSize && toSize+1 < toMaxSize) 
+    {
+        if (i+2 < fromSize && from[i] == 0 && from[i+1] == 0 && from[i+2] == 3) 
+        {
+            to[toSize] = to[toSize+1] = 0;
+            toSize += 2;
+            i += 3;
+        } 
+        else 
+        {
+            to[toSize] = from[i];
+            toSize += 1;
+            i += 1;
+        }
+    }
+
+    return toSize;
+}
+
+static char* __MakeSdpH265(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize
+                        , unsigned char* _pu8Pps, unsigned int _u32PpsSize
+                        , unsigned char* _pu8Vps, unsigned int _u32VpsSize)
+{
+    char* szRet;
+    int s32Ret;
+    char* szFormat =
+        "v=0\r\n"
+        "o=- 0 0 IN IP4 127.0.0.1\r\n"
+        "s=No Name\r\n"
+        "c=In IP4 %s\r\n"
+        "t=0 0\r\n"
+        "a=range:npt=0-\r\n"
+        "a=tool:libavformat 56.15.102\r\n"
+        "m=video 0 RTP/AVP 96\r\n"
+        "c=IN IP4 0.0.0.0\r\n"
+        "b=AS:500\r\n"
+        "a=rtpmap:96 H265/90000\r\n"
+        "a=fmtp:96 profile-space=%u"
+        ";profile-id=%u"
+        ";tier-flag=%u"
+        ";level-id=%u"
+        ";interop-constraints=%s"
+        ";sprop-vps=%s"
+        ";sprop-sps=%s"
+        ";sprop-pps=%s\r\n"
+        "a=control:streamid=0\r\n"
+        "m=audio 0 RTP/AVP 8\r\n"
+        "a=rtpmap:8 pcma/8000/1\r\n"
+        "a=fmtp:8 octet-align=1\r\n"
+        "a=framerate:25\r\n"
+/*
+        "m=audio 0 RTP/AVP 97\r\n"
+        "b=AS:12\r\n"
+        "a=rtpmap:97 AMR/8000/1\r\n"
+        "a=fmtp:97 octet-align=1\r\n"
+*/
+        "a=control:streamid=1\r\n"
+        ;
+        
+    // Set up the "a=fmtp:" SDP line for this stream.
+    unsigned char* vpsWEB = (unsigned char*)mem_malloc(_u32VpsSize); // "WEB" means "Without Emulation Bytes"
+    unsigned int vpsWEBSize = __RemoveH264or5EmulationBytes(vpsWEB, _u32VpsSize, _pu8Vps, _u32VpsSize);
+    if (vpsWEBSize < 6/*'profile_tier_level' offset*/ + 12/*num 'profile_tier_level' bytes*/)
+    {
+        // Bad VPS size => assume our source isn't ready
+        mem_free(vpsWEB);
+        return NULL;
+    }
+
+    unsigned char const* profileTierLevelHeaderBytes = &vpsWEB[6];
+    unsigned int profileSpace  = profileTierLevelHeaderBytes[0]>>6; // general_profile_space
+    unsigned int profileId = profileTierLevelHeaderBytes[0]&0x1F; // general_profile_idc
+    unsigned int tierFlag = (profileTierLevelHeaderBytes[0]>>5)&0x1; // general_tier_flag
+    unsigned int levelId = profileTierLevelHeaderBytes[11]; // general_level_idc
+    unsigned char const* interop_constraints = &profileTierLevelHeaderBytes[5];
+    char interopConstraintsStr[32];
+    memset(interopConstraintsStr, 0, sizeof(interopConstraintsStr));
+    sprintf(interopConstraintsStr, "%02X%02X%02X%02X%02X%02X", 
+        interop_constraints[0], interop_constraints[1], interop_constraints[2],
+        interop_constraints[3], interop_constraints[4], interop_constraints[5]);
+
+    char* szVPS = __MakeVPS(_pu8Vps, _u32VpsSize);
+    char* szSPS = __MakeSPS(_pu8Sps, _u32SpsSize);
+    char* szPPS = __MakePPS(_pu8Pps, _u32PpsSize);
+
+    s32Ret = _CheckBuf(szFormat, _szIp, 
+                                profileSpace,
+                                profileId,
+                                tierFlag,
+                                levelId,
+                                interopConstraintsStr,
+                                szVPS, 
+                                szSPS, 
+                                szPPS);
+    szRet = (char*)mem_malloc(s32Ret + 1);
+    sprintf(szRet, szFormat, 
+                        _szIp, 
+                        profileSpace,
+                        profileId,
+                        tierFlag,
+                        levelId,
+                        interopConstraintsStr,
+                        szVPS, 
+                        szSPS, 
+                        szPPS);
+
+    mem_free(szPPS);
+    mem_free(szSPS);
+    mem_free(szVPS);
+    mem_free(vpsWEB);
     return szRet;
 }
 
@@ -384,7 +539,7 @@ static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
             //CHECK(_pstRtspServer->hndReader, -1, "Error with: %#x\n", _pstRtspServer->hndReader);
         }
 
-        char* data = NULL;
+        unsigned char* data = NULL;
         int len = 0;
         ret = frame_pool_sps_get(_pstRtspServer->hndReader, &data, &len);
         CHECK(ret == 0, -1, "Error with: %#x\n", ret);
@@ -399,6 +554,20 @@ static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
         CHECK(len < sizeof(_pstRtspServer->au8Pps), -1, "Error with: %#x\n", -1);
         memcpy(_pstRtspServer->au8Pps, data, len);
         _pstRtspServer->u32PpsSize = len;
+        
+        FRAME_TYPE_E type = FRAME_TYPE_INVALID;
+        ret = frame_pool_vframe_type_get(_pstRtspServer->hndReader, &type);
+        CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+        
+        if (type == FRAME_TYPE_H265)
+        {
+            ret = frame_pool_vps_get(_pstRtspServer->hndReader, &data, &len);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+
+            CHECK(len < sizeof(_pstRtspServer->au8Vps), -1, "Error with: %#x\n", -1);
+            memcpy(_pstRtspServer->au8Vps, data, len);
+            _pstRtspServer->u32VpsSize = len;
+        }
     }
 
     return 0;
@@ -504,9 +673,23 @@ static int __RecvDescribe(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         ret = _GetRtspValue(_szRtspReq, "Cseq: ", szCseq);
     }
     CHECK(ret == 0, -1, "ret %d, _szRtspReq %s\n", ret, _szRtspReq);
-
-    char* szSdpContent = __MakeSdp("0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
-                                       _pstRtspServer->au8Pps, _pstRtspServer->u32PpsSize);
+    
+    FRAME_TYPE_E type = FRAME_TYPE_INVALID;
+    ret = frame_pool_vframe_type_get(_pstRtspServer->hndReader, &type);
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    char* szSdpContent = NULL;
+    if (type == FRAME_TYPE_H264)
+    {
+        szSdpContent = __MakeSdpH264("0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
+            _pstRtspServer->au8Pps, _pstRtspServer->u32PpsSize);
+    }
+    else if (type == FRAME_TYPE_H265)
+    {
+        szSdpContent = __MakeSdpH265("0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
+            _pstRtspServer->au8Pps, _pstRtspServer->u32PpsSize,
+            _pstRtspServer->au8Vps, _pstRtspServer->u32VpsSize);
+    }
     unsigned int u32ContentLength = strlen(szSdpContent);
 
     char* szTemplate =
@@ -784,7 +967,7 @@ static int _RecvRtspReq(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     return 0;
 }
 
-static int _SendAFrame(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
+static int _SendAFrameG711A(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
     void* pData;
@@ -821,7 +1004,7 @@ static int _SendAFrame(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
     return 0;
 }
 
-static int _SendVFrame(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
+static int _SendVFrameH264(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
     void* pData;
@@ -861,6 +1044,63 @@ static int _SendVFrame(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
         RTP_SPLIT_S* pstRetVRtpSplit = (RTP_SPLIT_S*)mem_malloc(sizeof(RTP_SPLIT_S));
         ret = rtp_h264_alloc(pu8Frame, u32FrameSize, &_pstRtspServer->u16VSeqNum,
                             _pstRtspServer->u32VTimeStamp, pstRetVRtpSplit);
+        CHECK(ret == 0, -1, "Error with %#x\n", ret);
+
+        u32DataLen = pstRetVRtpSplit->u32BufSize;
+        pData = pstRetVRtpSplit->pu8Buf;
+
+        ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
+        CHECK(ret == 0, -1, "Error with %#x\n", ret);
+
+        ret = rtp_free(pstRetVRtpSplit);
+        CHECK(ret == 0, -1, "Error with %#x\n", ret);
+
+        mem_free(pstRetVRtpSplit);
+    }
+    while (offset != -1);
+
+    return 0;
+}
+
+static int _SendVFrameH265(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer)
+{
+    int ret = -1;
+    void* pData;
+    unsigned int u32DataLen;
+
+    if (_pstRtspServer->u64LastVTimeStamp == 0)
+    {
+        _pstRtspServer->u64LastVTimeStamp = _pstInfo->timestamp;
+    }
+
+    _pstRtspServer->u32VTimeStamp = (unsigned int)(_pstInfo->timestamp - _pstRtspServer->u64LastVTimeStamp) * 90;
+    unsigned char* pu8Frame;
+    unsigned int u32FrameSize;
+    unsigned char* pu8Tmp = _pstInfo->data;
+    unsigned int u32TmpSize = _pstInfo->len;
+    int offset;
+    do
+    {
+        offset = rtp_h264_split(pu8Tmp, u32TmpSize);
+        if (offset != -1)
+        {
+            //DBG("offset=%d", offset);
+            pu8Frame = pu8Tmp;
+            u32FrameSize = offset;
+
+            pu8Tmp += offset;
+            u32TmpSize -= offset;
+        }
+        else
+        {
+            //DBG("u32TmpSize=%u", u32TmpSize);
+            pu8Frame = pu8Tmp;
+            u32FrameSize = u32TmpSize;
+        }
+        //DBG("u32VTimeStamp: %d, u16VSeqNum: %d\n", _pstRtspServer->u32VTimeStamp, _pstRtspServer->u16VSeqNum);
+        RTP_SPLIT_S* pstRetVRtpSplit = (RTP_SPLIT_S*)mem_malloc(sizeof(RTP_SPLIT_S));
+        ret = rtp_h265_alloc(pu8Frame, u32FrameSize, &_pstRtspServer->u16VSeqNum,
+            _pstRtspServer->u32VTimeStamp, pstRetVRtpSplit);
         CHECK(ret == 0, -1, "Error with %#x\n", ret);
 
         u32DataLen = pstRetVRtpSplit->u32BufSize;
@@ -994,12 +1234,17 @@ void* rtsp_process(void* _pstSession)
             {
                 if (frame->type == FRAME_TYPE_H264)
                 {
-                    ret = _SendVFrame(frame, &stRtspServer);
+                    ret = _SendVFrameH264(frame, &stRtspServer);
+                    GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
+                }
+                else if (frame->type == FRAME_TYPE_H265)
+                {
+                    ret = _SendVFrameH265(frame, &stRtspServer);
                     GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
                 }
                 else if (frame->type == FRAME_TYPE_G711A)
                 {
-                    ret = _SendAFrame(frame, &stRtspServer);
+                    ret = _SendAFrameG711A(frame, &stRtspServer);
                     GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
                 }
 

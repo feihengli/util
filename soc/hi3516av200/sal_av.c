@@ -1551,7 +1551,7 @@ static int venc_pipe_write(int stream_id, const void* frame, int len)
     return 0;
 }
 
-static int venc_write_cb(int stream_id, unsigned long long pts, char *data, int len, int keyFrame)
+static int venc_write_cb(int stream_id, unsigned long long pts, char *data, int len, int keyFrame, SAL_ENCODE_TYPE_E encode_type)
 {
     double timestamp = pts/1000;
 
@@ -1561,13 +1561,12 @@ static int venc_write_cb(int stream_id, unsigned long long pts, char *data, int 
 
     if (g_av_args->video.cb != NULL)
     {
-        g_av_args->video.cb(stream_id, data, len, keyFrame, timestamp);
+        g_av_args->video.cb(stream_id, data, len, keyFrame, timestamp, encode_type);
     }
 
     if (FILE_WRITE_TEST)
     {
-        sal_stream_s* stream = &g_av_args->video.stream[stream_id];
-        const char* path = (SAL_ENCODE_TYPE_H264 == stream->encode_type) ? "stream_264" : "stream_265";
+        const char* path = (SAL_ENCODE_TYPE_H264 == encode_type) ? "stream_264" : "stream_265";
         venc_file_write(stream_id, path, data, len);
     }
 
@@ -1606,7 +1605,7 @@ static int venc_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* 
         isKey = (pstStream->pstPack->DataType.enH265EType == H265E_NALU_IDRSLICE) ? 1 : 0;
     }
 
-    s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey);
+    s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey, stream->encode_type);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     s32Ret = HI_MPI_VENC_ReleaseStream(i, pstStream);
@@ -1631,12 +1630,12 @@ static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STA
     int isKey = 0;
     int buffer_offset = 0;
     int j = 0;
+    sal_stream_s* stream = &g_av_args->video.stream[i];
     for (j = 0; j < pstStream->u32PackCount; j++)
     {
         HI_U8* frame_addr = pstStream->pstPack[j].pu8Addr + pstStream->pstPack[j].u32Offset;
         HI_U32 frame_len = pstStream->pstPack[j].u32Len - pstStream->pstPack[j].u32Offset;
-        
-        sal_stream_s* stream = &g_av_args->video.stream[i];
+
         if (SAL_ENCODE_TYPE_H264 == stream->encode_type)
         {
             isKey |= (pstStream->pstPack[j].DataType.enH264EType == H264E_NALU_IDRSLICE) ? 1 : 0;
@@ -1652,7 +1651,7 @@ static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STA
     }
 
     //DBG("stream: %d, len: %d isKey: %d, u64PTS: %llu\n", i, buffer_offset, isKey, pstStream->pstPack[j-1].u64PTS);
-    s32Ret = venc_write_cb(i, pstStream->pstPack[j-1].u64PTS, buffer, buffer_offset, isKey);
+    s32Ret = venc_write_cb(i, pstStream->pstPack[j-1].u64PTS, buffer, buffer_offset, isKey, stream->encode_type);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     s32Ret = HI_MPI_VENC_ReleaseStream(i, pstStream);
