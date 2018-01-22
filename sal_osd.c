@@ -541,7 +541,7 @@ static int osd_load_cfg(char* path, int i, int j)
     int size = util_file_size(path);
     if (size > 0)
     {
-        char* buffer = malloc(size);
+        unsigned char* buffer = malloc(size);
         memset(buffer, 0, size);
 
         ret = util_file_read(path, buffer, size);

@@ -192,13 +192,13 @@ static void* dr_proc(void* args)
                 free(buffer2);
             }*/
             
-            rectangle_s arect[4] = 
-            {
-              {10, 10, 100, 100},  
-              {50, 50, 100, 100},  
-              {100, 100, 100, 100},  
-              {150, 150, 100, 100},  
-            };
+            //rectangle_s arect[4] = 
+            //{
+            //  {10, 10, 100, 100},  
+            //  {50, 50, 100, 100},  
+            //  {100, 100, 100, 100},  
+            //  {150, 150, 100, 100},  
+            //};
             
             sal_vgs_draw_rectangle(&stFrame, 2, 0x0000FF00, 100, 100, 200, 200);
             //sal_vgs_draw_rectangle1(&stFrame, 2, 0x0000FF00, arect, 4);

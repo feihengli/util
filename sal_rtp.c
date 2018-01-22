@@ -41,7 +41,7 @@ int rtp_amr_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
 
     rtp_hdr->version = 2;
     rtp_hdr->marker  = 0;
-    rtp_hdr->payload = AMR;
+    rtp_hdr->payload = rtp_payload_get("AMR");
     rtp_hdr->ssrc    = htonl(_Ssrc);
 
     unsigned char* pu8BufCurr = _pRetRtpSplit->pu8Buf;
@@ -123,7 +123,7 @@ int rtp_g711a_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
     return 0;
 }
 
-int rtp_h264_split(unsigned char* _pu8Frame, unsigned int _u32FrameSize)
+int rtp_vframe_split(unsigned char* _pu8Frame, unsigned int _u32FrameSize)
 {
     CHECK(_pu8Frame[0] == 0x00 && _pu8Frame[1] == 0x00 && _pu8Frame[2] == 0x00 && _pu8Frame[3] == 0x01, -1, "invalid parameter\n");
 
@@ -220,7 +220,7 @@ int rtp_h264_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
 
     rtp_hdr->version = 2;
     rtp_hdr->marker  = 0;
-    rtp_hdr->payload = H264;
+    rtp_hdr->payload = rtp_payload_get("H.264");
     rtp_hdr->ssrc    = htonl(10);
 
     unsigned char* pu8BufCurr = _pRetRtpSplit->pu8Buf;
@@ -444,7 +444,7 @@ int rtp_h265_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
 
     rtp_hdr->version = 2;
     rtp_hdr->marker  = 0;
-    rtp_hdr->payload = H265;
+    rtp_hdr->payload = rtp_payload_get("H.265");
     rtp_hdr->ssrc    = htonl(10);
     
     unsigned short DONL = 0;
@@ -595,18 +595,18 @@ int rtp_free(RTP_SPLIT_S* _pRetRtpSplit)
     return 0;
 }
 
-int rtp_payload_get(char* encode_type)
+int rtp_payload_get(const char* encode_type)
 {
     CHECK(encode_type, -1, "invalid parameter with: %#x\n", encode_type);
 
-    int payload = H264;
-    if (strstr(encode_type, "264"))
+    int payload = 96;
+    if (strstr(encode_type, "H.264")||strstr(encode_type, "H.265"))
     {
-        payload = H264;
+        payload = 96;
     }
     else if (strstr(encode_type, "AMR"))
     {
-        payload = AMR;
+        payload = 97;
     }
     else if (strstr(encode_type, "G.711A"))
     {

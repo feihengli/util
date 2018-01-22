@@ -222,10 +222,10 @@ typedef struct NALU_t
 } NALU_t;
 
 #define UDP_MAX_SIZE (1399)
-#define H264 (96)
-#define H265 (96)
-#define AMR (97)
-#define G711 (0)
+//#define H264 (96)
+//#define H265 (96)
+//#define AMR (97)
+//#define G711 (0)
 
 typedef struct RTP_SPLIT_S
 {
@@ -279,14 +279,14 @@ int rtp_g711a_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
                       unsigned long _Ssrc, RTP_SPLIT_S* _pRetRtpSplit);
 
 /*
- 函 数 名: rtp_h264_split
- 功能描述: h264裸流分割nalu，获取每个nalu的分界点
+ 函 数 名: rtp_vframe_split
+ 功能描述: h264/h265裸流分割nalu，获取每个nalu的分界点
  输入参数: _pu8Frame 视频帧
             _u32FrameSize 帧大小
  输出参数: 无
  返 回 值: 成功返回第二个nalu的分界点,失败返回小于0
 */
-int rtp_h264_split(unsigned char* _pu8Frame, unsigned int _u32FrameSize);
+int rtp_vframe_split(unsigned char* _pu8Frame, unsigned int _u32FrameSize);
 
 /*
  函 数 名: rtp_h264_alloc
@@ -325,8 +325,14 @@ int rtp_h265_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
 */
 int rtp_free(RTP_SPLIT_S* _pRetRtpSplit);
 
-
-int rtp_payload_get(char* encode_type);
+/*
+ 函 数 名: rtp_payload_get
+ 功能描述: 获取RTP包负荷类型
+ 输入参数: encode_type 编码格式
+ 输出参数:
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int rtp_payload_get(const char* encode_type);
 
 #ifdef __cplusplus
 #if __cplusplus

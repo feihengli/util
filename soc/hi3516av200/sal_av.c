@@ -295,7 +295,7 @@ static VI_DEV_ATTR_EX_S DEV_ATTR_DC_BASE_EX =
     {0, 0, 1920, 1080}
 };
 
-combo_dev_attr_t LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR = 
+static combo_dev_attr_t LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR = 
     {
     .devno = 0,
     .input_mode = INPUT_MODE_LVDS,
@@ -1870,7 +1870,10 @@ int sal_sys_init(sal_video_s* video)
 {
     CHECK(NULL == g_av_args, HI_FAILURE, "reinit error, please exit first.\n");
     CHECK(NULL != video, HI_FAILURE, "null ptr error.\n");
-
+    
+    //imx226解决VI无中断问题
+    //修改VI、VPSS、ISP时钟。详见\Hi3519V101_SDK_V2.0.4.0\mpp_big-little\component\isp\sensor\readme_cn.txt
+    //himm 0x1201004c 0x00094C42;himm 0x12010054 0x00024042
     g_av_args = (sal_av_args*)malloc(sizeof(sal_av_args));
     CHECK(g_av_args != NULL, HI_FAILURE, "malloc %d bytes failed.\n", sizeof(sal_av_args));
 

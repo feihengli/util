@@ -1024,7 +1024,7 @@ static int _SendVFrameH264(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
     int offset;
     do
     {
-        offset = rtp_h264_split(pu8Tmp, u32TmpSize);
+        offset = rtp_vframe_split(pu8Tmp, u32TmpSize);
         if (offset != -1)
         {
             //DBG("offset=%d", offset);
@@ -1081,7 +1081,7 @@ static int _SendVFrameH265(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
     int offset;
     do
     {
-        offset = rtp_h264_split(pu8Tmp, u32TmpSize);
+        offset = rtp_vframe_split(pu8Tmp, u32TmpSize);
         if (offset != -1)
         {
             //DBG("offset=%d", offset);
