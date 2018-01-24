@@ -1,15 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
-#include <sys/time.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/prctl.h>
 
+#include "sal_standard.h"
 #include "sal_overlay.h"
 #include "sal_util.h"
 #include "sal_debug.h"
@@ -541,10 +531,10 @@ static int osd_load_cfg(char* path, int i, int j)
     int size = util_file_size(path);
     if (size > 0)
     {
-        unsigned char* buffer = malloc(size);
+        char* buffer = malloc(size);
         memset(buffer, 0, size);
 
-        ret = util_file_read(path, buffer, size);
+        ret = util_file_read(path, (unsigned char*)buffer, size);
         CHECK(ret == 0, -1, "Error with %#x.\n", ret);
 
         const char* cmd[] = {"type:", "location:", "content:"};

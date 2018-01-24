@@ -72,6 +72,14 @@ typedef struct RTSP_SERVER_S
     // audio and video enable switch
     int bAEnable;
     int bVEnable;
+    
+    //Authenticate
+    int bAuthEnable;
+    int enAuthAlgo; //0: Digest 1: Basic
+    char username[32];
+    char password[32];
+    char realm[32];
+    char nonce[64];
 }
 RTSP_SERVER_S;
 
@@ -659,10 +667,10 @@ static int __RecvOptions(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     return 0;
 }
 
-static int __RecvDescribe(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
+static int __SendUnauthorized(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
-    char szCseq[16];
+    char szCseq[16] = {0};
 
     ret = _CheckUrl(_szRtspReq, _pstRtspServer, "DESCRIBE ");
     CHECK(ret == 0, -1, "_CheckUrl failed.\n");
@@ -673,6 +681,145 @@ static int __RecvDescribe(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         ret = _GetRtspValue(_szRtspReq, "Cseq: ", szCseq);
     }
     CHECK(ret == 0, -1, "ret %d, _szRtspReq %s\n", ret, _szRtspReq);
+    
+    char* szTemplate = NULL;
+    void* pData = NULL;
+    unsigned int u32DataLen = 0;
+    if (_pstRtspServer->enAuthAlgo == 0) //Digest
+    {
+        szTemplate =
+            "RTSP/1.0 401 Unauthorized\r\n"
+            "Server: myServer\r\n"
+            "Cseq: %s\r\n"
+            "WWW-Authenticate: Digest realm=\"%s\", nonce=\"%s\"\r\n"
+            "\r\n";
+
+        u32DataLen = _CheckBuf(szTemplate, szCseq, _pstRtspServer->realm, _pstRtspServer->nonce);
+        pData = mem_malloc(u32DataLen + 1);
+        sprintf(pData, szTemplate, szCseq, _pstRtspServer->realm, _pstRtspServer->nonce);
+    }
+    else if (_pstRtspServer->enAuthAlgo == 1) //Basic
+    {
+        szTemplate =
+            "RTSP/1.0 401 Unauthorized\r\n"
+            "Server: myServer\r\n"
+            "Cseq: %s\r\n"
+            "WWW-Authenticate: Basic realm=\"/\"\r\n"
+            "\r\n";
+
+        u32DataLen = _CheckBuf(szTemplate, szCseq, _pstRtspServer->realm, _pstRtspServer->nonce);
+        pData = mem_malloc(u32DataLen + 1);
+        sprintf(pData, szTemplate, szCseq, _pstRtspServer->realm, _pstRtspServer->nonce);
+    }
+    else
+    {
+        ASSERT(0, "\n");
+    }
+    DBG("send: \n%s\n", (char*)pData);
+
+    ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
+    CHECK(ret == 0, -1, "Error with %#x\n", ret);
+
+    mem_free(pData);
+
+    return 0;
+}
+
+static int __Authorize(char* _szRecvResponse, char* _szCmd, RTSP_SERVER_S* _pstRtspServer)
+{
+    int ret = -1;
+    
+    if (strstr(_szRecvResponse, "Basic"))
+    {
+        char szBasic[128];
+        memset(szBasic, 0, sizeof(szBasic));
+        sprintf(szBasic, "%s:%s", _pstRtspServer->username, _pstRtspServer->password);
+        char* szBasicBase64 = MY_Base64Encode(szBasic, strlen(szBasic));
+        memset(szBasic, 0, sizeof(szBasic));
+        sprintf(szBasic, "Basic %s", szBasicBase64);
+        
+        if (!strncmp(_szRecvResponse, szBasic, strlen(szBasic)))
+        {
+            DBG("Authorization success\n");
+            ret = 0;
+        }
+        else
+        {
+
+            WRN("failed to Authorization.\n_szRecvResponse: %s\n_szCalcResponse: %s\n", _szRecvResponse, szBasic);
+            ret = -1;
+        }
+        
+        free(szBasicBase64);
+    }
+    else if (strstr(_szRecvResponse, "Digest"))
+    {
+        char* szDigest = MY_Authrization(_szCmd, _pstRtspServer->szUrl
+            , _pstRtspServer->username, _pstRtspServer->password
+            , _pstRtspServer->realm, _pstRtspServer->nonce);
+        const char* szTmp = "Authorization: ";//ÌÞ³ýÇ°Ãæ"Authorization: "
+        memmove(szDigest, szDigest + strlen(szTmp), strlen(szDigest)-strlen(szTmp)+1);
+
+        if (!strncmp(_szRecvResponse, szDigest, strlen(_szRecvResponse)))
+        {
+            DBG("Authorization success\n");
+            ret = 0;
+        }
+        else
+        {
+
+            WRN("failed to Authorization.\n_szRecvResponse: %s\n_szCalcResponse: %s\n", _szRecvResponse, szDigest);
+            ret = -1;
+        }
+
+        free(szDigest);
+    }
+    else
+    {
+        ASSERT(0, "\n");
+    }
+
+    return ret;
+}
+
+static int __RecvDescribe(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
+{
+    int ret = -1;
+    char szCseq[16];
+    memset(szCseq, 0, sizeof(szCseq));
+    char Authorization[1024];
+    memset(Authorization, 0, sizeof(Authorization));
+
+    ret = _CheckUrl(_szRtspReq, _pstRtspServer, "DESCRIBE ");
+    CHECK(ret == 0, -1, "_CheckUrl failed.\n");
+
+    ret = _GetRtspValue(_szRtspReq, "CSeq: ", szCseq);
+    if (ret != 0)
+    {
+        ret = _GetRtspValue(_szRtspReq, "Cseq: ", szCseq);
+    }
+    CHECK(ret == 0, -1, "ret %d, _szRtspReq %s\n", ret, _szRtspReq);
+    
+    if (_pstRtspServer->bAuthEnable)
+    {
+        ret = _GetRtspValue(_szRtspReq, "Authorization: ", Authorization);
+        if (ret != 0)
+        {
+            ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+            return 0;
+        }
+        else
+        {
+            ret = __Authorize(Authorization, "DESCRIBE", _pstRtspServer);
+            if (ret == -1)
+            {
+                ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+                CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+                return 0;
+            }
+        }
+    }
     
     FRAME_TYPE_E type = FRAME_TYPE_INVALID;
     ret = frame_pool_vframe_type_get(_pstRtspServer->hndReader, &type);
@@ -722,8 +869,13 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
     char szCseq[16];
+    memset(szCseq, 0, sizeof(szCseq));
+    char Authorization[1024];
+    memset(Authorization, 0, sizeof(Authorization));
     char szTransport[128];
+    memset(szTransport, 0, sizeof(szTransport));
     char szRespStatus[32];
+    memset(szRespStatus, 0, sizeof(szRespStatus));
 
     ret = _GetRtspValue(_szRtspReq, "CSeq: ", szCseq);
     if (ret != 0)
@@ -731,7 +883,28 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         ret = _GetRtspValue(_szRtspReq, "Cseq: ", szCseq);
     }
     CHECK(ret == 0, -1, "ret Cseq %d, _szRtspReq %s\n", ret, _szRtspReq);
-
+    
+    if (_pstRtspServer->bAuthEnable)
+    {
+        ret = _GetRtspValue(_szRtspReq, "Authorization: ", Authorization);
+        if (ret != 0)
+        {
+            ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+            return 0;
+        }
+        else
+        {
+            ret = __Authorize(Authorization, "SETUP", _pstRtspServer);
+            if (ret == -1)
+            {
+                ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+                CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+                return 0;
+            }
+        }
+    }
+    
     ret = _GetRtspValue(_szRtspReq, "Transport: ", szTransport);
     CHECK(ret == 0, -1, "ret Transport %d, _szRtspReq %s\n", ret, _szRtspReq);
 
@@ -803,6 +976,9 @@ static int __RecvPlay(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
     char szCseq[16];
+    memset(szCseq, 0, sizeof(szCseq));
+    char Authorization[1024];
+    memset(Authorization, 0, sizeof(Authorization));
 
     ret = _GetRtspValue(_szRtspReq, "CSeq: ", szCseq);
     if (ret != 0)
@@ -810,7 +986,28 @@ static int __RecvPlay(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         ret = _GetRtspValue(_szRtspReq, "Cseq: ", szCseq);
     }
     CHECK(ret == 0, -1, "ret %d, _szRtspReq %s\n", ret, _szRtspReq);
-
+    
+    if (_pstRtspServer->bAuthEnable)
+    {
+        ret = _GetRtspValue(_szRtspReq, "Authorization: ", Authorization);
+        if (ret != 0)
+        {
+            ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+            return 0;
+        }
+        else
+        {
+            ret = __Authorize(Authorization, "PLAY", _pstRtspServer);
+            if (ret == -1)
+            {
+                ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+                CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+                return 0;
+            }
+        }
+    }
+    
     CHECK(!__SessionIsValid(_szRtspReq, _pstRtspServer), -1,
               "session is invalid, _szRtspReq %s\n", _szRtspReq);
 
@@ -845,6 +1042,9 @@ static int __RecvTearDown(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
     char szCseq[16];
+    memset(szCseq, 0, sizeof(szCseq));
+    char Authorization[1024];
+    memset(Authorization, 0, sizeof(Authorization));
 
     ret = _GetRtspValue(_szRtspReq, "CSeq: ", szCseq);
     if (ret != 0)
@@ -852,7 +1052,28 @@ static int __RecvTearDown(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         ret = _GetRtspValue(_szRtspReq, "Cseq: ", szCseq);
     }
     CHECK(ret == 0, -1, "ret %d, _szRtspReq %s\n", ret, _szRtspReq);
-
+    
+    if (_pstRtspServer->bAuthEnable)
+    {
+        ret = _GetRtspValue(_szRtspReq, "Authorization: ", Authorization);
+        if (ret != 0)
+        {
+            ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+            return 0;
+        }
+        else
+        {
+            ret = __Authorize(Authorization, "TEARDOWN", _pstRtspServer);
+            if (ret == -1)
+            {
+                ret = __SendUnauthorized(_szRtspReq, _pstRtspServer);
+                CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+                return 0;
+            }
+        }
+    }
+    
     CHECK(!__SessionIsValid(_szRtspReq, _pstRtspServer), -1,
               "session is invalid, _szRtspReq %s\n", _szRtspReq);
 
@@ -1147,7 +1368,17 @@ void* rtsp_process(void* _pstSession)
 
     ret = select_debug(stRtspServer.hndSocket, 0);
     CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
-
+    
+    stRtspServer.bAuthEnable = 1;
+    stRtspServer.enAuthAlgo = 0; //0: Digest 1: Basic
+    strcpy(stRtspServer.username, "admin");
+    strcpy(stRtspServer.password, "admin");
+    strcpy(stRtspServer.realm, "LIVE555 Streaming Media");
+    for(i = 0; i < 16; i++)
+    {
+        sprintf(stRtspServer.nonce + strlen(stRtspServer.nonce), "%02x", rand() % 255);
+    }
+    
     char* data = NULL;
     int len = 0;
     while (pclient->running)
