@@ -44,6 +44,8 @@ static int rtsps_accept(rtsps_s* pRtsps)
     CHECK(pclient, -1, "error with %#x\n", pclient);
 
     pclient->fd = s32ConFd;
+    pclient->port = ntohs(RemoteAddr.sin_port);
+    strcpy(pclient->szIP, inet_ntoa(RemoteAddr.sin_addr));
 
     pclient->running = 1;
     ret = pthread_create(&pclient->pid, NULL, rtsp_process, pclient);

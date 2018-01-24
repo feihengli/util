@@ -13,6 +13,8 @@ extern "C"{
 typedef struct client_s // 客户端链表的节点数据
 {
     int fd;
+    char szIP[16];
+    int port;
     int running;
     pthread_t pid;
 }client_s;

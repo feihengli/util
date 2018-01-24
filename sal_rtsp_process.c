@@ -80,6 +80,17 @@ typedef struct RTSP_SERVER_S
     char password[32];
     char realm[32];
     char nonce[64];
+    
+    //send over udp
+    char szClientIP[16];
+    int client_Vfd[2];
+    int client_Vport[2]; //rtp rtcp
+    int server_Vfd[2];
+    int server_Vport[2]; //rtp rtcp
+    int client_Afd[2];
+    int client_Aport[2]; //rtp rtcp
+    int server_Afd[2];
+    int server_Aport[2]; //rtp rtcp
 }
 RTSP_SERVER_S;
 
@@ -734,7 +745,7 @@ static int __Authorize(char* _szRecvResponse, char* _szCmd, RTSP_SERVER_S* _pstR
         char szBasic[128];
         memset(szBasic, 0, sizeof(szBasic));
         sprintf(szBasic, "%s:%s", _pstRtspServer->username, _pstRtspServer->password);
-        char* szBasicBase64 = MY_Base64Encode(szBasic, strlen(szBasic));
+        char* szBasicBase64 = MY_Base64Encode((unsigned char*)szBasic, strlen(szBasic));
         memset(szBasic, 0, sizeof(szBasic));
         sprintf(szBasic, "Basic %s", szBasicBase64);
         
@@ -865,6 +876,32 @@ static int __RecvDescribe(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     return 0;
 }
 
+static int __Setup_udp(int port)
+{
+    int ret = -1;
+    int Fd = socket(AF_INET, SOCK_DGRAM, 0);
+    CHECK(Fd > 0, -1, "error with %#x: %s\n", Fd, strerror(errno));
+
+    int Open = 1;
+    ret = setsockopt(Fd, SOL_SOCKET, SO_REUSEADDR, &Open, sizeof(int));
+    CHECK(ret == 0, -1, "error with %#x: %s\n", ret, strerror(errno));
+
+    struct sockaddr_in Addr;
+    memset((char *)&Addr, 0, sizeof(struct sockaddr_in));
+    Addr.sin_family = AF_INET;
+    Addr.sin_port = htons(port);
+    Addr.sin_addr.s_addr = htonl(INADDR_ANY);//允许连接到所有本地地址上
+    ret = bind(Fd, (struct sockaddr *)&Addr, sizeof(struct sockaddr));
+    CHECK(ret == 0, -1, "error with %#x: %s\n", ret, strerror(errno));
+    
+    int flag = fcntl(Fd, F_GETFL);
+    CHECK(flag != -1, -1, "failed to get fcntl flag: %s\n", strerror(errno));
+    CHECK(fcntl(Fd, F_SETFL, flag | O_NONBLOCK) != -1, -1, "failed to set nonblock: %s\n", strerror(errno));
+    DBG("setnoblock success.fd: %d\n", Fd);
+
+    return Fd;
+}
+
 static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
 {
     int ret = -1;
@@ -905,19 +942,6 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         }
     }
     
-    ret = _GetRtspValue(_szRtspReq, "Transport: ", szTransport);
-    CHECK(ret == 0, -1, "ret Transport %d, _szRtspReq %s\n", ret, _szRtspReq);
-
-    //bFound = strstr(szTransport, "TCP");
-    if (strstr(szTransport, "TCP"))
-    {
-        _pstRtspServer->enTranType = TRANS_TYPE_TCP;
-    }
-    else
-    {
-        _pstRtspServer->enTranType = TRANS_TYPE_UDP;
-    }
-
     int s32StreamId = _GetStreamId(_szRtspReq, _pstRtspServer);
     if (0 == s32StreamId)
     {
@@ -931,31 +955,124 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     {
         CHECK(0, -1, "Error with s32StreamId %d\n", s32StreamId);
     }
+    
+    ret = _GetRtspValue(_szRtspReq, "Transport: ", szTransport);
+    CHECK(ret == 0, -1, "ret Transport %d, _szRtspReq %s\n", ret, _szRtspReq);
 
-    char* szTemplate =
-        "RTSP/1.0 %s\r\n"
-        "Server: myServer\r\n"
-        "Cseq: %s\r\n"
-        "Session: %s\r\n"
-        "Transport: RTP/AVP/TCP;unicast;interleaved=%u-%u;mode=play\r\n"
-        "\r\n";
+    if (strstr(szTransport, "TCP"))
+    {
+        _pstRtspServer->enTranType = TRANS_TYPE_TCP;
+    }
+    // udp
+    else if (0 == s32StreamId)
+    {
+        _pstRtspServer->enTranType = TRANS_TYPE_UDP;
+        char* find = strstr(szTransport, "client_port=");
+        CHECK(find, -1, "client_Vport is invalid[%s]\n", szTransport);
+        _pstRtspServer->client_Vport[0] = atoi(find+strlen("client_port="));
+        DBG("client_Vport[0]: %d\n", _pstRtspServer->client_Vport[0]);
+        
+        char* find1 = strstr(find, "-");
+        CHECK(find1, -1, "client_Vport is invalid[%s]\n", find);
+        _pstRtspServer->client_Vport[1] = atoi(find1+strlen("-"));
+        DBG("client_Vport[1]: %d\n", _pstRtspServer->client_Vport[1]);
+        
+        _pstRtspServer->client_Vfd[0] = __Setup_udp(_pstRtspServer->client_Vport[0]);
+        CHECK(_pstRtspServer->client_Vfd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Vfd[0]);
+        _pstRtspServer->client_Vfd[1] = __Setup_udp(_pstRtspServer->client_Vport[1]);
+        CHECK(_pstRtspServer->client_Vfd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Vfd[1]);
+        _pstRtspServer->server_Vfd[0] = __Setup_udp(_pstRtspServer->server_Vport[0]);
+        CHECK(_pstRtspServer->server_Vfd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Vfd[0]);
+        _pstRtspServer->server_Vfd[1] = __Setup_udp(_pstRtspServer->server_Vport[1]);
+        CHECK(_pstRtspServer->server_Vfd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Vfd[1]);
+    }
+    else if (1 == s32StreamId)
+    {
+        _pstRtspServer->enTranType = TRANS_TYPE_UDP;
+        char* find = strstr(szTransport, "client_port=");
+        CHECK(find, -1, "client_Vport is invalid[%s]\n", szTransport);
+        _pstRtspServer->client_Aport[0] = atoi(find+strlen("client_port="));
+        DBG("client_Aport[0]: %d\n", _pstRtspServer->client_Aport[0]);
 
-    void* pData;
-    unsigned int u32DataLen;
+        char* find1 = strstr(find, "-");
+        CHECK(find1, -1, "client_Vport is invalid[%s]\n", find);
+        _pstRtspServer->client_Aport[1] = atoi(find1+strlen("-"));
+        DBG("client_Aport[1]: %d\n", _pstRtspServer->client_Aport[1]);
 
-    if (TRANS_TYPE_UDP == _pstRtspServer->enTranType || -1 == s32StreamId)
+        _pstRtspServer->client_Afd[0] = __Setup_udp(_pstRtspServer->client_Aport[0]);
+        CHECK(_pstRtspServer->client_Afd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Afd[0]);
+        _pstRtspServer->client_Afd[1] = __Setup_udp(_pstRtspServer->client_Aport[1]);
+        CHECK(_pstRtspServer->client_Afd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Afd[1]);
+        _pstRtspServer->server_Afd[0] = __Setup_udp(_pstRtspServer->server_Aport[0]);
+        CHECK(_pstRtspServer->server_Afd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Afd[0]);
+        _pstRtspServer->server_Afd[1] = __Setup_udp(_pstRtspServer->server_Aport[1]);
+        CHECK(_pstRtspServer->server_Afd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Afd[1]);
+    }
+
+    char* szTemplate = NULL;
+    void* pData = NULL;
+    unsigned int u32DataLen = 0;
+
+    if (-1 == s32StreamId)
     {
         strcpy(szRespStatus, "406 Not Acceptable");
         _pstRtspServer->enStatus = RTSP_SERVER_STATUS_ERROR;
     }
     else if (TRANS_TYPE_TCP == _pstRtspServer->enTranType)
     {
+        szTemplate =
+            "RTSP/1.0 %s\r\n"
+            "Server: myServer\r\n"
+            "Cseq: %s\r\n"
+            "Session: %s\r\n"
+            "Transport: RTP/AVP/TCP;unicast;interleaved=%u-%u;mode=play\r\n"
+            "\r\n";
         strcpy(szRespStatus, "200 OK");
+        u32DataLen = _CheckBuf(szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession, _pstRtspServer->u32SetupCount, _pstRtspServer->u32SetupCount + 1);
+        pData = mem_malloc(u32DataLen + 1);
+        sprintf(pData, szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession, _pstRtspServer->u32SetupCount, _pstRtspServer->u32SetupCount + 1);
+    }
+    else if (TRANS_TYPE_UDP == _pstRtspServer->enTranType && 0 == s32StreamId)
+    {
+        //strcpy(szRespStatus, "406 Not Acceptable");
+        //_pstRtspServer->enStatus = RTSP_SERVER_STATUS_ERROR;
+        szTemplate =
+            "RTSP/1.0 %s\r\n"
+            "Server: myServer\r\n"
+            "Cseq: %s\r\n"
+            "Session: %s\r\n"
+            "Transport: RTP/AVP;unicast;client_port=%d-%d;server_port=%d-%d\r\n"
+            "\r\n";
+        strcpy(szRespStatus, "200 OK");
+        u32DataLen = _CheckBuf(szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession
+                                            , _pstRtspServer->client_Vport[0], _pstRtspServer->client_Vport[1]
+                                            , _pstRtspServer->server_Vport[0], _pstRtspServer->server_Vport[1]);
+        pData = mem_malloc(u32DataLen + 1);
+        sprintf(pData, szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession
+                                            , _pstRtspServer->client_Vport[0], _pstRtspServer->client_Vport[1]
+                                            , _pstRtspServer->server_Vport[0], _pstRtspServer->server_Vport[1]);
+    }
+    else if (TRANS_TYPE_UDP == _pstRtspServer->enTranType && 1 == s32StreamId)
+    {
+        //strcpy(szRespStatus, "406 Not Acceptable");
+        //_pstRtspServer->enStatus = RTSP_SERVER_STATUS_ERROR;
+        szTemplate =
+            "RTSP/1.0 %s\r\n"
+            "Server: myServer\r\n"
+            "Cseq: %s\r\n"
+            "Session: %s\r\n"
+            "Transport: RTP/AVP;unicast;client_port=%d-%d;server_port=%d-%d\r\n"
+            "\r\n";
+        strcpy(szRespStatus, "200 OK");
+        u32DataLen = _CheckBuf(szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession
+            , _pstRtspServer->client_Aport[0], _pstRtspServer->client_Aport[1]
+        , _pstRtspServer->server_Aport[0], _pstRtspServer->server_Aport[1]);
+        pData = mem_malloc(u32DataLen + 1);
+        sprintf(pData, szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession
+            , _pstRtspServer->client_Aport[0], _pstRtspServer->client_Aport[1]
+        , _pstRtspServer->server_Aport[0], _pstRtspServer->server_Aport[1]);
     }
 
-    u32DataLen = _CheckBuf(szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession, _pstRtspServer->u32SetupCount, _pstRtspServer->u32SetupCount + 1);
-    pData = mem_malloc(u32DataLen + 1);
-    sprintf(pData, szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession, _pstRtspServer->u32SetupCount, _pstRtspServer->u32SetupCount + 1);
     DBG("send: \n%s\n", (char*)pData);
 
     /*
@@ -1213,9 +1330,28 @@ static int _SendAFrameG711A(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServe
     u32DataLen = pstRetARtpSplit->u32BufSize;
     pData = pstRetARtpSplit->pu8Buf;
     //DBG("rtp : u32DataLen: %u\n", u32DataLen);
-
-    ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
-    CHECK(ret == 0, -1, "Error with %#x\n", ret);
+    
+    if (_pstRtspServer->enTranType == TRANS_TYPE_TCP)
+    {
+        ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
+        CHECK(ret == 0, -1, "Error with %#x\n", ret);
+    }
+    else if (_pstRtspServer->enTranType == TRANS_TYPE_UDP)
+    {
+        struct sockaddr_in Addr;
+        memset((char *)&Addr, 0, sizeof(struct sockaddr_in));
+        Addr.sin_family = AF_INET;
+        Addr.sin_port = htons(_pstRtspServer->client_Vport[0]);
+        Addr.sin_addr.s_addr = inet_addr(_pstRtspServer->szClientIP);
+        //DBG("udp addr: %s:%d\n", _pstRtspServer->szClientIP, _pstRtspServer->client_Vport[0]);
+        int i = 0;
+        for (i = 0; i < pstRetARtpSplit->u32SegmentCount; i++)
+        {
+            ret = sendto(_pstRtspServer->client_Vfd[0], pstRetARtpSplit->ppu8Segment[i]+4, pstRetARtpSplit->pU32SegmentSize[i]-4, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+            CHECK((ret == pstRetARtpSplit->pU32SegmentSize[i]-4) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
+            //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
+        }
+    }
 
     ret = rtp_free(pstRetARtpSplit);
     CHECK(ret == 0, -1, "Error with %#x\n", ret);
@@ -1269,9 +1405,28 @@ static int _SendVFrameH264(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
 
         u32DataLen = pstRetVRtpSplit->u32BufSize;
         pData = pstRetVRtpSplit->pu8Buf;
-
-        ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
-        CHECK(ret == 0, -1, "Error with %#x\n", ret);
+        
+        if (_pstRtspServer->enTranType == TRANS_TYPE_TCP)
+        {
+            ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
+            CHECK(ret == 0, -1, "Error with %#x\n", ret);
+        }
+        else if (_pstRtspServer->enTranType == TRANS_TYPE_UDP)
+        {
+            struct sockaddr_in Addr;
+            memset((char *)&Addr, 0, sizeof(struct sockaddr_in));
+            Addr.sin_family = AF_INET;
+            Addr.sin_port = htons(_pstRtspServer->client_Vport[0]);
+            Addr.sin_addr.s_addr = inet_addr(_pstRtspServer->szClientIP);
+            //DBG("udp addr: %s:%d\n", _pstRtspServer->szClientIP, _pstRtspServer->client_Vport[0]);
+            int i = 0;
+            for (i = 0; i < pstRetVRtpSplit->u32SegmentCount; i++)
+            {
+                ret = sendto(_pstRtspServer->client_Vfd[0], pstRetVRtpSplit->ppu8Segment[i]+4, pstRetVRtpSplit->pU32SegmentSize[i]-4, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+                CHECK((ret == pstRetVRtpSplit->pU32SegmentSize[i]-4) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
+                //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
+            }
+        }
 
         ret = rtp_free(pstRetVRtpSplit);
         CHECK(ret == 0, -1, "Error with %#x\n", ret);
@@ -1326,9 +1481,28 @@ static int _SendVFrameH265(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
 
         u32DataLen = pstRetVRtpSplit->u32BufSize;
         pData = pstRetVRtpSplit->pu8Buf;
-
-        ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
-        CHECK(ret == 0, -1, "Error with %#x\n", ret);
+        
+        if (_pstRtspServer->enTranType == TRANS_TYPE_TCP)
+        {
+            ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
+            CHECK(ret == 0, -1, "Error with %#x\n", ret);
+        }
+        else if (_pstRtspServer->enTranType == TRANS_TYPE_UDP)
+        {
+            struct sockaddr_in Addr;
+            memset((char *)&Addr, 0, sizeof(struct sockaddr_in));
+            Addr.sin_family = AF_INET;
+            Addr.sin_port = htons(_pstRtspServer->client_Vport[0]);
+            Addr.sin_addr.s_addr = inet_addr(_pstRtspServer->szClientIP);
+            //DBG("udp addr: %s:%d\n", _pstRtspServer->szClientIP, _pstRtspServer->client_Vport[0]);
+            int i = 0;
+            for (i = 0; i < pstRetVRtpSplit->u32SegmentCount; i++)
+            {
+                ret = sendto(_pstRtspServer->client_Vfd[0], pstRetVRtpSplit->ppu8Segment[i]+4, pstRetVRtpSplit->pU32SegmentSize[i]-4, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+                CHECK((ret == pstRetVRtpSplit->pU32SegmentSize[i]-4) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
+                //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
+            }
+        }
 
         ret = rtp_free(pstRetVRtpSplit);
         CHECK(ret == 0, -1, "Error with %#x\n", ret);
@@ -1337,6 +1511,73 @@ static int _SendVFrameH265(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
     }
     while (offset != -1);
 
+    return 0;
+}
+
+static int _RecvRtcpOverUdp(RTSP_SERVER_S* _pstRtspServer)
+{
+    int ret = -1;
+
+    fd_set rset;
+    FD_ZERO(&rset);
+    int maxfd = 0;
+
+    FD_SET(_pstRtspServer->server_Vfd[1], &rset);
+    maxfd = (maxfd < _pstRtspServer->server_Vfd[1]) ? _pstRtspServer->server_Vfd[1] : maxfd;
+    FD_SET(_pstRtspServer->server_Afd[1], &rset);
+    maxfd = (maxfd < _pstRtspServer->server_Afd[1]) ? _pstRtspServer->server_Afd[1] : maxfd;
+    //DBG("maxfd: %d\n", maxfd);
+    
+    struct timeval TimeoutVal = {0, 1};
+    ret = select(maxfd + 1, &rset, NULL, NULL, &TimeoutVal);
+    if (ret < 0)
+    {
+        CHECK(errno == EINTR || errno == EAGAIN, -1, "select failed with: %s\n", strerror(errno));
+        return 0;
+    }
+    else if (ret == 0)
+    {
+        //DBG("time out.\n");
+        return 0;
+    }
+    struct sockaddr_in Addr;
+    memset((char *)&Addr, 0, sizeof(struct sockaddr_in));
+    unsigned char buffer[2048];
+    memset(buffer, 0, sizeof(buffer));
+    socklen_t len = sizeof(Addr);
+    if (FD_ISSET(_pstRtspServer->server_Vfd[1], &rset))
+    {
+        ret = recvfrom(_pstRtspServer->server_Vfd[1], buffer, sizeof(buffer), 0, (struct sockaddr *)&Addr, &len); 
+        if (ret < 0)
+        {
+            CHECK(errno == EINTR || errno == EAGAIN, -1, "select failed with: %s\n", strerror(errno));
+            return 0;
+        }
+        else if (ret == 0)
+        {
+            DBG("remote closed. ret: %d\n", ret);
+            return -1;
+        }
+        //DBG("recv video rtcp from: %s:%d\n", inet_ntoa(Addr.sin_addr), ntohs(Addr.sin_port));
+        //to do
+    }
+    else if (FD_ISSET(_pstRtspServer->server_Afd[1], &rset))
+    {
+        ret = recvfrom(_pstRtspServer->server_Afd[1], buffer, sizeof(buffer), 0, (struct sockaddr *)&Addr, &len); 
+        if (ret < 0)
+        {
+            CHECK(errno == EINTR || errno == EAGAIN, -1, "select failed with: %s\n", strerror(errno));
+            return 0;
+        }
+        else if (ret == 0)
+        {
+            DBG("remote closed. ret: %d\n", ret);
+            return -1;
+        }
+        //DBG("recv audio rtcp from: %s:%d\n", inet_ntoa(Addr.sin_addr), ntohs(Addr.sin_port));
+        //to do
+    }
+    
     return 0;
 }
 
@@ -1369,7 +1610,7 @@ void* rtsp_process(void* _pstSession)
     ret = select_debug(stRtspServer.hndSocket, 0);
     CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
     
-    stRtspServer.bAuthEnable = 1;
+    stRtspServer.bAuthEnable = 0;
     stRtspServer.enAuthAlgo = 0; //0: Digest 1: Basic
     strcpy(stRtspServer.username, "admin");
     strcpy(stRtspServer.password, "admin");
@@ -1378,6 +1619,14 @@ void* rtsp_process(void* _pstSession)
     {
         sprintf(stRtspServer.nonce + strlen(stRtspServer.nonce), "%02x", rand() % 255);
     }
+    
+    //used for udp transfer
+    strcpy(stRtspServer.szClientIP, pclient->szIP);
+    int base_port = 60000 + (rand()%5000);
+    stRtspServer.server_Vport[0] = base_port++;
+    stRtspServer.server_Vport[1] = base_port++;
+    stRtspServer.server_Aport[0] = base_port++;
+    stRtspServer.server_Aport[1] = base_port++;
     
     char* data = NULL;
     int len = 0;
@@ -1429,12 +1678,20 @@ void* rtsp_process(void* _pstSession)
         }
         else if (stRtspServer.enStatus == RTSP_SERVER_STATUS_RTP)
         {
-            u32ExpectTimeout = GENERAL_RWTIMEOUT;
-            u32Timeout = select_wtimeout(stRtspServer.hndSocket);
-            if (u32Timeout > u32ExpectTimeout)
+            if (stRtspServer.enTranType == TRANS_TYPE_TCP)
             {
-                WRN("Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-                break;
+                u32ExpectTimeout = GENERAL_RWTIMEOUT;
+                u32Timeout = select_wtimeout(stRtspServer.hndSocket);
+                if (u32Timeout > u32ExpectTimeout)
+                {
+                    WRN("Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
+                    break;
+                }
+            }
+            else if (stRtspServer.enTranType == TRANS_TYPE_UDP)
+            {
+                ret = _RecvRtcpOverUdp(&stRtspServer);
+                GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
             }
 
             do
@@ -1519,6 +1776,29 @@ _EXIT:
         ret = select_destroy(stRtspServer.hndSocket);
         CHECK(ret == 0, NULL, "Error with %#x\n", ret);
         stRtspServer.hndSocket = NULL;
+    }
+    if (stRtspServer.enTranType == TRANS_TYPE_UDP)
+    {
+        int idx = 0;
+        for (idx = 0; idx < 2; idx++)
+        {
+            if (stRtspServer.client_Vfd[idx] > 0)
+            {
+                close(stRtspServer.client_Vfd[idx]);
+            }
+            if (stRtspServer.server_Vfd[idx] > 0)
+            {
+                close(stRtspServer.server_Vfd[idx]);
+            }
+            if (stRtspServer.client_Afd[idx] > 0)
+            {
+                close(stRtspServer.client_Afd[idx]);
+            }
+            if (stRtspServer.server_Afd[idx] > 0)
+            {
+                close(stRtspServer.server_Afd[idx]);
+            }
+        }
     }
 
     pclient->running = 0;

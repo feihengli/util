@@ -276,7 +276,7 @@ int select_rw(handle hndselect)
     fd_set read_fds;
     FD_ZERO(&read_fds);
     FD_SET(pstSelect->fd, &read_fds);
-    struct timeval TimeoutVal = {0, 10*1000};
+    struct timeval TimeoutVal = {0, 1};
     ret = select(pstSelect->fd + 1, &read_fds, NULL, NULL, &TimeoutVal);
     if (ret < 0)
     {
