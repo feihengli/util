@@ -1,7 +1,7 @@
 #
 # sensor lib Makefile
 #
-	
+export TOP_DIR=../../../../	
 include ../../../../Rules.make
 
 TARGETS := libsns_imx226.a

@@ -1,12 +1,11 @@
 #
 # sensor lib Makefile
 #
-	
+export TOP_DIR=../../../../	
 include ../../../../Rules.make
 
 TARGETS := libsns_ov2710.a
 TARGETS_SO := libsns_ov2710.so
-PRINTF := @printf "\033[31;1m\t%s\033[0m\n"
 
 SRC :=$(wildcard *.c)
 SRC += $(wildcard *.cpp)
@@ -19,16 +18,16 @@ CXXFLAGS += -I../../mpp_include
 all:$(TARGETS) $(TARGETS_SO)
 
 $(TARGETS):$(OBJS)
-	$(PRINTF) "AR  $@";$(AR) rcs $@ $^
+	$(AR) rcs $@ $^
 $(TARGETS_SO):$(OBJS)
-	$(PRINTF) "CC  $@";$(CC) -shared -fPIC -o $@ $^
+	$(CC) -shared -fPIC -o $@ $^
 
 %.o: %.cpp
-	$(PRINTF) "$(CXX) $@";$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 %.o: %.c
-	$(PRINTF) "$(CC) $@";$(CC) -c $(CXXFLAGS) -o $@ $<
+	$(CC) -c $(CXXFLAGS) -o $@ $<
 
 clean:
-	$(PRINTF) "RM  $(TARGETS) $(TARGETS_SO)";rm -r $(TARGETS) $(TARGETS_SO);rm *.o
+	rm -r $(TARGETS) $(TARGETS_SO);rm *.o
 

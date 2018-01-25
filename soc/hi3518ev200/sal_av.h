@@ -17,6 +17,13 @@ typedef enum SAL_BITRATE_CONTROL_E
     SAL_BITRATE_CONTROL_BUTT,
 }SAL_BITRATE_CONTROL_E;
 
+typedef enum SAL_ENCODE_TYPE_E
+{
+    SAL_ENCODE_TYPE_H264 = 0,
+    SAL_ENCODE_TYPE_H265 = 1,
+    SAL_ENCODE_TYPE_BUTT,
+}SAL_ENCODE_TYPE_E;
+
 typedef struct sal_stream_s
 {
     int enable;
@@ -26,6 +33,7 @@ typedef struct sal_stream_s
     int bitrate;  //kbps
     int gop;
     SAL_BITRATE_CONTROL_E bitrate_ctl;
+    SAL_ENCODE_TYPE_E encode_type;
 }sal_stream_s;
 
 typedef struct sal_video_qp_s
@@ -46,7 +54,7 @@ typedef struct sal_video_qp_s
             key 关键帧标志
  返 回 值: 成功返回0,失败返回小于0
 */
-typedef int (*sal_video_frame_cb)(int stream, char *frame, unsigned long len, int key, double pts);
+typedef int (*sal_video_frame_cb)(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type);
 
 typedef struct sal_video_s
 {

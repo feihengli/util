@@ -388,7 +388,7 @@ static char* __MakeSdpH264(char* _szIp, unsigned char* _pu8Sps, unsigned int _u3
         "a=fmtp:96 packetization-mode=1; sprop-parameter-sets=%s,%s; profile-level-id=%s\r\n"
         "a=control:streamid=0\r\n"
         "m=audio 0 RTP/AVP 8\r\n"
-        "a=rtpmap:8 pcma/8000/1\r\n"
+        "a=rtpmap:8 pcma/8000/1\r\n" //8: g711a rtppayloadtype.pcma: g711a. 8000: 采样率. 1: 单声道
         "a=fmtp:8 octet-align=1\r\n"
         "a=framerate:25\r\n"
 /*
