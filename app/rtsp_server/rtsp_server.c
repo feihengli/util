@@ -164,7 +164,7 @@ int main(int argc, char** argv)
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
     
-    bmp_demo();
+    //bmp_demo();
     
     while (!test_exit)
     {

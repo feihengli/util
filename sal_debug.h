@@ -7,6 +7,7 @@ extern "C"{
 #endif
 #endif
 
+#define USE_MESSAGE 1
 
 #include "sal_standard.h"
 
@@ -39,6 +40,9 @@ int debug_print(const char* format, ...);
 int debug_recv(Message* recv);
 char* debug_time_str();
 
+
+#if USE_MESSAGE
+
 #define DBG(fmt, ...) do\
 {\
     debug_print(GREEN"%s debug %s: %d: "NONE""fmt"", debug_time_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__);\
@@ -53,6 +57,25 @@ char* debug_time_str();
 {\
     debug_print(YELLOW"%s warn %s: %d: "NONE""fmt"", debug_time_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__);\
 }while(0)
+
+#else
+
+#define DBG(fmt, ...) do\
+{\
+    fprintf(stdout, GREEN"%s debug %s: %d: "NONE""fmt"", debug_time_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__);\
+}while(0)
+
+#define ERR(fmt, ...) do\
+{\
+    fprintf(stdout, RED"%s error %s: %d: "NONE""fmt"", debug_time_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__);\
+}while(0)
+
+#define WRN(fmt, ...) do\
+{\
+    fprintf(stdout, YELLOW"%s warn %s: %d: "NONE""fmt"", debug_time_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__);\
+}while(0)
+
+#endif
 
 #define CHECK(exp, ret, fmt...) do\
 {\

@@ -169,39 +169,66 @@ static void* dr_proc(void* args)
             unsigned char* yuv420sp = (unsigned char*) HI_MPI_SYS_Mmap(stFrame.stVFrame.u32PhyAddr[0], u32Size);
             CHECK(yuv420sp, NULL, "error with %#x.\n", yuv420sp);
             
-            /*{
-                int size1 = 200*200*1.5;
-                unsigned char* buffer1 = malloc(size1);
-                CHECK(NULL != buffer1, NULL, "malloc %d bytes failed.\n", size1);
-                
-                dr_cutYuv420sp(buffer1, yuv420sp, 100, 100, 200, 200, 640, 360);
-                unsigned char* buffer2 = NULL;
-                unsigned long size2 = 0;
-                
-                dr_yuv420sp2jpeg(&buffer2, &size2, buffer1, 200, 200, 80);
-                
-                util_file_write("yuvsp420new2.jpg", buffer2, size2);
-                
-                buffer2 = NULL;
-                size2 = 0;
+            DBG("u32PoolId: %u\n", stFrame.u32PoolId);
+            DBG("u32Width: %u\n", stFrame.stVFrame.u32Width);
+            DBG("u32Height: %u\n", stFrame.stVFrame.u32Height);
+            DBG("u32Stride: %u %u %u\n", stFrame.stVFrame.u32Stride[0], stFrame.stVFrame.u32Stride[1], stFrame.stVFrame.u32Stride[2]);
 
-                dr_yuv420sp2jpeg_gray(&buffer2, &size2, buffer1, 200, 200, 80);
-
-
-                util_file_write("yuvsp420new2_gray.jpg", buffer2, size2);
-                free(buffer2);
-            }*/
+            int cutW = 192;
+            int cutH = 192;
+            int size = cutW*cutH*3/2;
+            char* dstBuff = malloc(size);
+            dr_cutYuv420sp(dstBuff, yuv420sp, 100, 100, cutW, cutH, stFrame.stVFrame.u32Width, stFrame.stVFrame.u32Height);
             
-            //rectangle_s arect[4] = 
-            //{
-            //  {10, 10, 100, 100},  
-            //  {50, 50, 100, 100},  
-            //  {100, 100, 100, 100},  
-            //  {150, 150, 100, 100},  
-            //};
+            char* dstBuff1 = malloc(size);
+            dr_cutYuv420sp(dstBuff1, yuv420sp, 200, 100, cutW, cutH, stFrame.stVFrame.u32Width, stFrame.stVFrame.u32Height);
             
-            sal_vgs_draw_rectangle(&stFrame, 2, 0x0000FF00, 100, 100, 200, 200);
-            //sal_vgs_draw_rectangle1(&stFrame, 2, 0x0000FF00, arect, 4);
+            memcpy(yuv420sp, dstBuff, size);
+            stFrame.stVFrame.u32Width = cutW;
+            stFrame.stVFrame.u32Height = cutH;
+            stFrame.stVFrame.u32Stride[0] = cutW;
+            stFrame.stVFrame.u32Stride[1] = cutW;
+            stFrame.stVFrame.u32Stride[2] = cutW;
+            stFrame.stVFrame.u32PhyAddr[0] = stFrame.stVFrame.u32PhyAddr[0];
+            stFrame.stVFrame.u32PhyAddr[1] = stFrame.stVFrame.u32PhyAddr[0] + stFrame.stVFrame.u32Stride[0]*stFrame.stVFrame.u32Height;
+            stFrame.stVFrame.u32PhyAddr[2] = stFrame.stVFrame.u32PhyAddr[1] + stFrame.stVFrame.u32Stride[1]*stFrame.stVFrame.u32Height/4;
+
+            DBG("begin send ...\n");
+            s32Ret = HI_MPI_VENC_SendFrame(3, &stFrame, -1);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            //DBG("send ok.\n");
+
+            //jpeg_get_one_picture();
+            
+            DBG("begin send ...\n");
+            s32Ret = HI_MPI_VENC_SendFrame(3, &stFrame, -1);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            //DBG("send ok.\n");
+
+            //jpeg_get_one_picture();
+            
+            ////
+            memcpy(yuv420sp, dstBuff1, size);
+            stFrame.stVFrame.u32Width = cutW;
+            stFrame.stVFrame.u32Height = cutH;
+            stFrame.stVFrame.u32Stride[0] = cutW;
+            stFrame.stVFrame.u32Stride[1] = cutW;
+            stFrame.stVFrame.u32Stride[2] = cutW;
+            stFrame.stVFrame.u32PhyAddr[0] = stFrame.stVFrame.u32PhyAddr[0];
+            stFrame.stVFrame.u32PhyAddr[1] = stFrame.stVFrame.u32PhyAddr[0] + stFrame.stVFrame.u32Stride[0]*stFrame.stVFrame.u32Height;
+            stFrame.stVFrame.u32PhyAddr[2] = stFrame.stVFrame.u32PhyAddr[1] + stFrame.stVFrame.u32Stride[1]*stFrame.stVFrame.u32Height/4;
+            
+            DBG("u32PoolId: %u\n", stFrame.u32PoolId);
+            DBG("u32Width: %u\n", stFrame.stVFrame.u32Width);
+            DBG("u32Height: %u\n", stFrame.stVFrame.u32Height);
+            DBG("u32Stride: %u %u %u\n", stFrame.stVFrame.u32Stride[0], stFrame.stVFrame.u32Stride[1], stFrame.stVFrame.u32Stride[2]);
+            
+            DBG("begin send ...\n");
+            s32Ret = HI_MPI_VENC_SendFrame(3, &stFrame, -1);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            //DBG("send ok.\n");
+
+            //jpeg_get_one_picture();
             
             s32Ret = HI_MPI_SYS_Munmap(yuv420sp, u32Size);
             CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
@@ -209,7 +236,112 @@ static void* dr_proc(void* args)
         s32Ret = HI_MPI_VPSS_ReleaseChnFrame(VpssGrp, g_dr_args->vpss_chn, &stFrame);
         CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
         
-        //break;
+        break;
+    }
+
+    return NULL;
+}
+
+static void* dr_proc1(void* args)
+{
+    prctl(PR_SET_NAME, __FUNCTION__);
+
+    int s32Ret = -1;
+    VIDEO_FRAME_INFO_S stFrame;
+    memset(&stFrame, 0, sizeof(stFrame));
+
+    VI_CHN ViChn = 0;
+    HI_U32 u32Depth = 0;
+
+    s32Ret = HI_MPI_VI_GetFrameDepth(ViChn, &u32Depth);
+    CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+
+    if (u32Depth < 1)
+    {
+        u32Depth = 1;
+        DBG("vi_chn: %d, u32Depth: %u\n", ViChn, u32Depth);
+    }
+
+    s32Ret = HI_MPI_VI_SetFrameDepth(ViChn, u32Depth);
+    CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+    
+    while (g_dr_args->running)
+    {
+        util_time_abs(&g_dr_args->current);
+        
+        s32Ret = HI_MPI_VI_GetFrame(ViChn, &stFrame, 10);
+        if (s32Ret != HI_SUCCESS)
+        {
+            //DBG("HI_MPI_VPSS_GetChnFrame[%d] time out. Error with %#x.\n", g_dr_args->vpss_chn, s32Ret);
+            continue;
+        }
+        else
+        {
+            unsigned int u32Size = (stFrame.stVFrame.u32Stride[0]) * (stFrame.stVFrame.u32Height) * 3 / 2;//yuv420
+            unsigned char* yuv420sp = (unsigned char*) HI_MPI_SYS_Mmap(stFrame.stVFrame.u32PhyAddr[0], u32Size);
+            CHECK(yuv420sp, NULL, "error with %#x.\n", yuv420sp);
+            
+            DBG("u32PoolId: %u\n", stFrame.u32PoolId);
+            DBG("u32Width: %u\n", stFrame.stVFrame.u32Width);
+            DBG("u32Height: %u\n", stFrame.stVFrame.u32Height);
+            DBG("u32Stride: %u %u %u\n", stFrame.stVFrame.u32Stride[0], stFrame.stVFrame.u32Stride[1], stFrame.stVFrame.u32Stride[2]);
+            
+            int cutW = 192;
+            int cutH = 192;
+            int size = cutW*cutH*3/2;
+            char* dstBuff = malloc(size);
+            dr_cutYuv420sp(dstBuff, yuv420sp, 100, 100, cutW, cutH, stFrame.stVFrame.u32Width, stFrame.stVFrame.u32Height);
+            
+            memcpy(yuv420sp, dstBuff, size);
+            stFrame.stVFrame.u32Width = cutW;
+            stFrame.stVFrame.u32Height = cutH;
+            stFrame.stVFrame.u32Stride[0] = cutW;
+            stFrame.stVFrame.u32Stride[1] = cutW;
+            stFrame.stVFrame.u32Stride[2] = cutW;
+            stFrame.stVFrame.u32PhyAddr[0] = stFrame.stVFrame.u32PhyAddr[0];
+            stFrame.stVFrame.u32PhyAddr[1] = stFrame.stVFrame.u32PhyAddr[0] + stFrame.stVFrame.u32Stride[0]*stFrame.stVFrame.u32Height;
+            stFrame.stVFrame.u32PhyAddr[2] = stFrame.stVFrame.u32PhyAddr[1] + stFrame.stVFrame.u32Stride[1]*stFrame.stVFrame.u32Height/4;
+            
+            
+            VIDEO_FRAME_INFO_S stFrameBak;
+            memcpy(&stFrameBak, &stFrame, sizeof(stFrame));
+            
+            DBG("begin send ...\n");
+            jpeg1_create_chn(3, cutW, cutH);
+            
+            s32Ret = HI_MPI_VENC_SendFrame(3, &stFrameBak, -1);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            //DBG("send ok.\n");
+            unsigned char* out_buffer = NULL;
+            int out_size = 0;
+            jpeg1_get_picture(3, &out_buffer, &out_size);
+            jpeg1_release_picture(3, &out_buffer, &out_size);
+            jpeg1_destroy_chn(3);
+            
+            //DBG("destroy ok.\n");
+            jpeg1_create_chn(3, cutW, cutH);
+            // 
+            //s32Ret = HI_MPI_VENC_ResetChn(3);
+            //CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            
+            //s32Ret = HI_MPI_VENC_StartRecvPic(3);
+            //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+            s32Ret = HI_MPI_VENC_SendFrame(3, &stFrame, -1);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            //DBG("send ok.\n");
+            jpeg1_get_picture(3, &out_buffer, &out_size);
+            jpeg1_release_picture(3, &out_buffer, &out_size);
+            jpeg1_destroy_chn(3);
+            DBG("end.\n");
+            
+            s32Ret = HI_MPI_SYS_Munmap(yuv420sp, u32Size);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+        }
+        s32Ret = HI_MPI_VI_ReleaseFrame(ViChn, &stFrame);
+        CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+        
+        break;
     }
 
     return NULL;
@@ -230,7 +362,7 @@ int sal_dr_init()
     g_dr_args->vpss_chn = 1;
 
     g_dr_args->running = 1;
-    ret = pthread_create(&g_dr_args->pid, NULL, dr_proc, NULL);
+    ret = pthread_create(&g_dr_args->pid, NULL, dr_proc1, NULL);
     CHECK(ret == 0, -1, "Error with %s.\n", strerror(errno));
 
     return 0;
