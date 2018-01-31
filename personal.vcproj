@@ -183,11 +183,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\bmp.h"
+			RelativePath=".\bmp.h"
 			>
 		</File>
 		<File
-			RelativePath=".\bmp.h"
+			RelativePath=".\common_include\libjpeg-turbo\bmp.h"
 			>
 		</File>
 		<File
@@ -203,11 +203,15 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\libjpeg\cdjpeg.h"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\libjpeg-turbo\cdjpeg.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\cdjpeg.h"
+			RelativePath=".\common_include\mp4v2\chapter.h"
 			>
 		</File>
 		<File
@@ -243,6 +247,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\mp4v2\file.h"
+			>
+		</File>
+		<File
 			RelativePath=".\file_frame_source.c"
 			>
 		</File>
@@ -251,11 +259,39 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\mp4v2\file_prop.h"
+			>
+		</File>
+		<File
 			RelativePath=".\app\frame_pool_test\frame_pool_test.c"
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\mp4v2\general.h"
+			>
+		</File>
+		<File
+			RelativePath=".\hi3516av200.make"
+			>
+		</File>
+		<File
+			RelativePath=".\hi3518ev200.make"
+			>
+		</File>
+		<File
 			RelativePath=".\app\httpc_test\httpc.c"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\isma.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\itmf_generic.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\itmf_tags.h"
 			>
 		</File>
 		<File
@@ -275,11 +311,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jconfig.h"
+			RelativePath=".\common_include\libjpeg-turbo\jconfig.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jconfig.h"
+			RelativePath=".\common_include\libjpeg\jconfig.h"
 			>
 		</File>
 		<File
@@ -331,11 +367,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jmemsys.h"
+			RelativePath=".\common_include\libjpeg\jmemsys.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jmemsys.h"
+			RelativePath=".\common_include\libjpeg-turbo\jmemsys.h"
 			>
 		</File>
 		<File
@@ -355,11 +391,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jpegint.h"
+			RelativePath=".\common_include\libjpeg-turbo\jpegint.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jpegint.h"
+			RelativePath=".\common_include\libjpeg\jpegint.h"
 			>
 		</File>
 		<File
@@ -399,6 +435,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\mp4v2\mp4v2.h"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\libcurl\mprintf.h"
 			>
 		</File>
@@ -420,6 +460,18 @@
 		</File>
 		<File
 			RelativePath=".\common_include\libdigest\our_md5.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\platform.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\project.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\project.h.in"
 			>
 		</File>
 		<File
@@ -507,6 +559,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\sal_mp4record.c"
+			>
+		</File>
+		<File
+			RelativePath=".\sal_mp4record.h"
+			>
+		</File>
+		<File
 			RelativePath=".\sal_osd.c"
 			>
 		</File>
@@ -567,6 +627,18 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\mp4v2\sample.h"
+			>
+		</File>
+		<File
+			RelativePath=".\sps_pps_parser.c"
+			>
+		</File>
+		<File
+			RelativePath=".\sps_pps_parser.h"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\libcurl\stdcheaders.h"
 			>
 		</File>
@@ -575,11 +647,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\app\sys_daemon\sys_daemon.c"
+			RelativePath=".\common_include\mp4v2\streaming.h"
 			>
 		</File>
 		<File
-			RelativePath=".\app\test_encode\test_encode.c"
+			RelativePath=".\app\sys_daemon\sys_daemon.c"
 			>
 		</File>
 		<File
@@ -605,6 +677,10 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath=".\app\test_encode\test_encode.c"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\libtinyxml\tinystr.h"
 			>
 		</File>
@@ -614,6 +690,14 @@
 		</File>
 		<File
 			RelativePath=".\common_include\libjpeg-turbo\tjutil.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\track.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\mp4v2\track_prop.h"
 			>
 		</File>
 		<File
