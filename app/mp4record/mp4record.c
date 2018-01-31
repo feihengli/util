@@ -14,10 +14,12 @@
 #include "sal_osd.h"
 #include "sal_debug.h"
 #include "sal_frame_pool.h"
-#include "sal_rtsp_server.h"
-#include "sal_draw_rectangle.h"
+#include "sal_rtp.h"
+#include "sal_mp4record.h"
+#include "mp4v2/mp4v2.h"
 
 static int test_exit = 0;
+static handle g_hndMp4;
 
 void sigint(int dummy)
 {
@@ -46,21 +48,14 @@ void init_signals(void)
 
 int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
 {
-    if (gHndMainFramePool)
-    {
-        frame_pool_add(gHndMainFramePool, frame, len, FRAME_TYPE_G711A, 1, timestamp);
-    }
 
-    if (gHndSubFramePool)
-    {
-        frame_pool_add(gHndSubFramePool, frame, len, FRAME_TYPE_G711A, 1, timestamp);
-    }
 
     return 0;
 }
 
 int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type)
 {
+    int ret = -1;
     FRAME_TYPE_E type = FRAME_TYPE_INVALID;
     if (encode_type == SAL_ENCODE_TYPE_H264)
     {
@@ -71,15 +66,37 @@ int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, doub
         type = FRAME_TYPE_H265;
     }
     
-    if (stream == 0 && gHndMainFramePool)
+    if (1 ==stream)
     {
-        frame_pool_add(gHndMainFramePool, frame, len, type, key, pts);
-    }
-    else if (stream == 1 && gHndSubFramePool)
-    {
-        frame_pool_add(gHndSubFramePool, frame, len, type, key, pts);
-    }
+        unsigned char* pu8Frame = NULL;
+        unsigned int u32FrameSize = 0;
+        unsigned char* pu8Tmp = (unsigned char*)frame;
+        unsigned int u32TmpSize = len;
+        int offset;
+        do
+        {
+            offset = rtp_vframe_split(pu8Tmp, u32TmpSize);
+            if (offset != -1)
+            {
+                //DBG("offset=%d", offset);
+                pu8Frame = pu8Tmp;
+                u32FrameSize = offset;
 
+                pu8Tmp += offset;
+                u32TmpSize -= offset;
+            }
+            else
+            {
+                //DBG("u32TmpSize=%u", u32TmpSize);
+                pu8Frame = pu8Tmp;
+                u32FrameSize = u32TmpSize;
+            }
+            ret = mp4VEncoderWrite(g_hndMp4, pu8Frame, u32FrameSize);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+        }
+        while (offset != -1);
+    }
+    
     return 0;
 }
 
@@ -108,12 +125,10 @@ int main(int argc, char** argv)
         }
     }
 
-    gHndMainFramePool = frame_pool_init(30);
-    CHECK(gHndMainFramePool, -1, "Error with: %#x\n", gHndMainFramePool);
-
-    gHndSubFramePool = frame_pool_init(30);
-    CHECK(gHndSubFramePool, -1, "Error with: %#x\n", gHndSubFramePool);
-
+    
+    g_hndMp4 = mp4EncoderInit("testh264.mp4", 640, 360, 15);
+    CHECK(g_hndMp4, -1, "Error with: %#x\n", g_hndMp4);
+    
     //config of video
     sal_video_s video;
     memset(&video, 0, sizeof(video));
@@ -138,53 +153,17 @@ int main(int argc, char** argv)
     ret = sal_sys_init(&video);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys video init done.\n");
-
-    //config of audio
-    /*sal_audio_s audio;
-    memset(&audio, 0, sizeof(audio));
-    audio.enable = 1;
-    strcpy(audio.encType, "G.711A");
-    audio.channels = 1;
-    audio.bitWidth = 16;
-    audio.volume = 100;
-    audio.sampleRate = 8000;
-    audio.ptNumPerFrm = 320;
-    audio.cb = get_audio_frame_cb;
-    ret = sal_audio_init(&audio);
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-    DBG("sys audio init done.\n");*/
-    
-    
-    ret = sal_dr_init();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-    
-   /* ret = sal_osd_init();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);*/
-
-    handle hndRtsps = rtsps_init(554);
-    CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
-    
-    //bmp_demo();
     
     while (!test_exit)
     {
         usleep(1);
     }
     
-    ret = sal_osd_exit();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-    
-    ret = sal_jpeg_exit();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-
-    rtsps_destroy(hndRtsps);
     //sal_audio_exit();
     sal_sys_exit();
+    
+    mp4Encoderclose(g_hndMp4);
 
-    frame_pool_destroy(gHndSubFramePool);
-    gHndSubFramePool = NULL;
-    frame_pool_destroy(gHndMainFramePool);
-    gHndMainFramePool = NULL;
 
     return 0;
 }

@@ -66,4 +66,15 @@ make CROSS_COMPILE=${COMPILE}
 cp ./libdigest.a ../ -af
 cd ../
 
+#libmp4v2.a
+rm -rf mp4v2-2.0.0
+tar -xjvf mp4v2-2.0.0.tar.bz2
+cd ./mp4v2-2.0.0;
+./configure --host=${COMPILE}
+make
+${COMPILE}-strip --strip-debug --strip-unneeded ./.libs/libmp4v2.a
+${COMPILE}-ranlib ./.libs/libmp4v2.a
+cp ./.libs/libmp4v2.a ../ -af
+cd ../
+
 

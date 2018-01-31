@@ -409,7 +409,7 @@ static int sys_vb_init()
         {
             sal_stream_s* stream = &g_av_args->video.stream[i];
             stVbConf.astCommPool[i].u32BlkSize = sys_vb_size(stream->width, stream->height, align_width);
-            stVbConf.astCommPool[i].u32BlkCnt = 10;
+            stVbConf.astCommPool[i].u32BlkCnt = 3;
 
             if (!g_av_args->ext_chn_enable && g_av_args->video.rotate)
                 stVbConf.astCommPool[i].u32BlkCnt += 2;
@@ -1726,7 +1726,7 @@ static void* venc_thread(void *p)
                       continue;
                 }
 
-                if (g_av_args->onestream_enable)
+                if (g_av_args->onestream_enable && stStat.u32CurPacks == 1)
                 {
                     s32Ret = venc_one_pack(i, &stStream, &stStat);
                     CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
@@ -1888,12 +1888,20 @@ int sal_sys_init(sal_video_s* video)
     g_av_args->ext_chn_width = g_av_args->video.stream[0].width;
     g_av_args->ext_chn_height = g_av_args->video.stream[0].height;
 
-    g_av_args->scale_enable = (g_av_args->sensor_type == SONY_IMX291_LVDS_1080P_30FPS) ? 1 : 0;
-
+    //g_av_args->scale_enable = (g_av_args->sensor_type == SONY_IMX291_LVDS_1080P_30FPS) ? 1 : 0;
+    g_av_args->scale_enable = 1;
+    
     if (g_av_args->scale_enable && g_av_args->sensor_type == SONY_IMX291_LVDS_1080P_30FPS)
     {
         g_av_args->vi_width = 1920;
         g_av_args->vi_height = 1080;
+        g_av_args->ext_chn_enable = 1;
+        g_av_args->ext_chn_number = 4;
+    }
+    if (g_av_args->scale_enable && g_av_args->sensor_type == SONY_IMX226_LVDS_12M_30FPS)
+    {
+        g_av_args->vi_width = 4000;
+        g_av_args->vi_height = 3000;
         g_av_args->ext_chn_enable = 1;
         g_av_args->ext_chn_number = 4;
     }

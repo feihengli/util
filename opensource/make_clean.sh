@@ -21,6 +21,9 @@ rm -rf libtinyxml
 #libdigest.a
 rm -rf libdigest
 
+#libmp4v2.a
+rm -rf mp4v2-2.0.0
+
 rm -rf *.a
 
 

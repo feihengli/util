@@ -70,8 +70,10 @@ typedef struct RTSP_SERVER_S
     unsigned int u32ATimeStamp;
 
     // audio and video enable switch
-    int bAEnable;
-    int bVEnable;
+    int bASupport; //由服务端控制是否支持
+    int bAEnable;  //由客户端控制是否使能
+    int bVSupport; //由服务端控制是否支持
+    int bVEnable;  //由客户端控制是否使能
     
     //Authenticate
     int bAuthEnable;
@@ -371,35 +373,48 @@ static char* __MakePLI(unsigned char* _pu8Sps)
     return szRet;
 }
 
-static char* __MakeSdpH264(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize
+static char* __MakeSdpH264(RTSP_SERVER_S* _pstRtspServer, char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize
                         , unsigned char* _pu8Pps, unsigned int _u32PpsSize)
 {
-    char* szRet;
-    int s32Ret;
-    char* szFormat =
-        "v=0\r\n"
-        "o=- 0 0 IN IP4 127.0.0.1\r\n"
-        "s=No Name\r\n"
-        "c=In IP4 %s\r\n"
-        "t=0 0\r\n"
-        "a=tool:libavformat 56.15.102\r\n"
-        "m=video 0 RTP/AVP 96\r\n"
-        "a=rtpmap:96 H264/90000\r\n"
-        "a=fmtp:96 packetization-mode=1; sprop-parameter-sets=%s,%s; profile-level-id=%s\r\n"
-        "a=control:streamid=0\r\n"
-        "m=audio 0 RTP/AVP 8\r\n"
-        "a=rtpmap:8 pcma/8000/1\r\n" //8: g711a rtppayloadtype.pcma: g711a. 8000: 采样率. 1: 单声道
-        "a=fmtp:8 octet-align=1\r\n"
-        "a=framerate:25\r\n"
-/*
-        "m=audio 0 RTP/AVP 97\r\n"
-        "b=AS:12\r\n"
-        "a=rtpmap:97 AMR/8000/1\r\n"
-        "a=fmtp:97 octet-align=1\r\n"
-*/
-        "a=control:streamid=1\r\n"
-        ;
-
+    char* szRet = NULL;
+    int s32Ret = -1;
+    char szFormat[1024];
+    memset(szFormat, 0, sizeof(szFormat));
+    
+    if (_pstRtspServer->bVSupport)
+    {
+        char* szVFormat =
+            "v=0\r\n"
+            "o=- 0 0 IN IP4 127.0.0.1\r\n"
+            "s=No Name\r\n"
+            "c=In IP4 %s\r\n"
+            "t=0 0\r\n"
+            "a=tool:libavformat 56.15.102\r\n"
+            "m=video 0 RTP/AVP 96\r\n"
+            "a=rtpmap:96 H264/90000\r\n"
+            "a=fmtp:96 packetization-mode=1; sprop-parameter-sets=%s,%s; profile-level-id=%s\r\n"
+            "a=control:streamid=0\r\n"
+            ;
+        strcat(szFormat, szVFormat);
+    }
+    
+    if (_pstRtspServer->bASupport)
+    {
+        char* szAFormat =
+            "a=rtpmap:8 pcma/8000/1\r\n" //8: g711a rtppayloadtype.pcma: g711a. 8000: 采样率. 1: 单声道
+            "a=fmtp:8 octet-align=1\r\n"
+            "a=framerate:25\r\n"
+    /*
+            "m=audio 0 RTP/AVP 97\r\n"
+            "b=AS:12\r\n"
+            "a=rtpmap:97 AMR/8000/1\r\n"
+            "a=fmtp:97 octet-align=1\r\n"
+    */
+            "a=control:streamid=1\r\n"
+            ;
+        strcat(szFormat, szAFormat);
+    }
+    
     char* szSPS = __MakeSPS(_pu8Sps, _u32SpsSize);
     char* szPPS = __MakePPS(_pu8Pps, _u32PpsSize);
     char* szPLI = __MakePLI(_pu8Sps);
@@ -437,46 +452,60 @@ static unsigned int __RemoveH264or5EmulationBytes(unsigned char* to, unsigned in
     return toSize;
 }
 
-static char* __MakeSdpH265(char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize
+static char* __MakeSdpH265(RTSP_SERVER_S* _pstRtspServer, char* _szIp, unsigned char* _pu8Sps, unsigned int _u32SpsSize
                         , unsigned char* _pu8Pps, unsigned int _u32PpsSize
                         , unsigned char* _pu8Vps, unsigned int _u32VpsSize)
 {
-    char* szRet;
-    int s32Ret;
-    char* szFormat =
-        "v=0\r\n"
-        "o=- 0 0 IN IP4 127.0.0.1\r\n"
-        "s=No Name\r\n"
-        "c=In IP4 %s\r\n"
-        "t=0 0\r\n"
-        "a=range:npt=0-\r\n"
-        "a=tool:libavformat 56.15.102\r\n"
-        "m=video 0 RTP/AVP 96\r\n"
-        "c=IN IP4 0.0.0.0\r\n"
-        "b=AS:500\r\n"
-        "a=rtpmap:96 H265/90000\r\n"
-        "a=fmtp:96 profile-space=%u"
-        ";profile-id=%u"
-        ";tier-flag=%u"
-        ";level-id=%u"
-        ";interop-constraints=%s"
-        ";sprop-vps=%s"
-        ";sprop-sps=%s"
-        ";sprop-pps=%s\r\n"
-        "a=control:streamid=0\r\n"
-        "m=audio 0 RTP/AVP 8\r\n"
-        "a=rtpmap:8 pcma/8000/1\r\n"
-        "a=fmtp:8 octet-align=1\r\n"
-        "a=framerate:25\r\n"
-/*
-        "m=audio 0 RTP/AVP 97\r\n"
-        "b=AS:12\r\n"
-        "a=rtpmap:97 AMR/8000/1\r\n"
-        "a=fmtp:97 octet-align=1\r\n"
-*/
-        "a=control:streamid=1\r\n"
-        ;
-        
+    char* szRet = NULL;
+    int s32Ret = -1;
+    char szFormat[1024];
+    memset(szFormat, 0, sizeof(szFormat));
+    
+    if (_pstRtspServer->bVSupport)
+    {
+        char* szVFormat =
+            "v=0\r\n"
+            "o=- 0 0 IN IP4 127.0.0.1\r\n"
+            "s=No Name\r\n"
+            "c=In IP4 %s\r\n"
+            "t=0 0\r\n"
+            "a=range:npt=0-\r\n"
+            "a=tool:libavformat 56.15.102\r\n"
+            "m=video 0 RTP/AVP 96\r\n"
+            "c=IN IP4 0.0.0.0\r\n"
+            "b=AS:500\r\n"
+            "a=rtpmap:96 H265/90000\r\n"
+            "a=fmtp:96 profile-space=%u"
+            ";profile-id=%u"
+            ";tier-flag=%u"
+            ";level-id=%u"
+            ";interop-constraints=%s"
+            ";sprop-vps=%s"
+            ";sprop-sps=%s"
+            ";sprop-pps=%s\r\n"
+            "a=control:streamid=0\r\n"
+            ;
+        strcat(szFormat, szVFormat);
+    }
+    
+    if (_pstRtspServer->bASupport)
+    {
+        char* szAFormat =
+            "m=audio 0 RTP/AVP 8\r\n"
+            "a=rtpmap:8 pcma/8000/1\r\n"
+            "a=fmtp:8 octet-align=1\r\n"
+            "a=framerate:25\r\n"
+    /*
+            "m=audio 0 RTP/AVP 97\r\n"
+            "b=AS:12\r\n"
+            "a=rtpmap:97 AMR/8000/1\r\n"
+            "a=fmtp:97 octet-align=1\r\n"
+    */
+            "a=control:streamid=1\r\n"
+            ;
+        strcat(szFormat, szAFormat);
+    }
+
     // Set up the "a=fmtp:" SDP line for this stream.
     unsigned char* vpsWEB = (unsigned char*)mem_malloc(_u32VpsSize); // "WEB" means "Without Emulation Bytes"
     unsigned int vpsWEBSize = __RemoveH264or5EmulationBytes(vpsWEB, _u32VpsSize, _pu8Vps, _u32VpsSize);
@@ -839,12 +868,12 @@ static int __RecvDescribe(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     char* szSdpContent = NULL;
     if (type == FRAME_TYPE_H264)
     {
-        szSdpContent = __MakeSdpH264("0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
+        szSdpContent = __MakeSdpH264(_pstRtspServer, "0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
             _pstRtspServer->au8Pps, _pstRtspServer->u32PpsSize);
     }
     else if (type == FRAME_TYPE_H265)
     {
-        szSdpContent = __MakeSdpH265("0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
+        szSdpContent = __MakeSdpH265(_pstRtspServer, "0.0.0.0", _pstRtspServer->au8Sps, _pstRtspServer->u32SpsSize,
             _pstRtspServer->au8Pps, _pstRtspServer->u32PpsSize,
             _pstRtspServer->au8Vps, _pstRtspServer->u32VpsSize);
     }
@@ -1031,6 +1060,11 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         u32DataLen = _CheckBuf(szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession, _pstRtspServer->u32SetupCount, _pstRtspServer->u32SetupCount + 1);
         pData = mem_malloc(u32DataLen + 1);
         sprintf(pData, szTemplate, szRespStatus, szCseq, _pstRtspServer->szSession, _pstRtspServer->u32SetupCount, _pstRtspServer->u32SetupCount + 1);
+        /*
+        ** interleaved=0-1 对应RTP OVER TCP 的交错帧头字段channel，0表示RTP 1表示RTCP
+        ** 所以每建立一路都是要加2，源端RTP封音视频包的时候也要对应起来
+        */
+        _pstRtspServer->u32SetupCount += 2;
     }
     else if (TRANS_TYPE_UDP == _pstRtspServer->enTranType && 0 == s32StreamId)
     {
@@ -1074,12 +1108,6 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
     }
 
     DBG("send: \n%s\n", (char*)pData);
-
-    /*
-    ** interleaved=0-1 对应RTP OVER TCP 的交错帧头字段channel，0表示RTP 1表示RTCP
-    ** 所以每建立一路都是要加2，源端RTP封音视频包的时候也要对应起来
-    */
-    _pstRtspServer->u32SetupCount += 2;
 
     ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
     CHECK(ret == 0, -1, "Error with %#x\n", ret);
@@ -1347,8 +1375,8 @@ static int _SendAFrameG711A(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServe
         int i = 0;
         for (i = 0; i < pstRetARtpSplit->u32SegmentCount; i++)
         {
-            ret = sendto(_pstRtspServer->client_Vfd[0], pstRetARtpSplit->ppu8Segment[i]+4, pstRetARtpSplit->pU32SegmentSize[i]-4, 0, (struct sockaddr *)&Addr, sizeof(Addr));
-            CHECK((ret == pstRetARtpSplit->pU32SegmentSize[i]-4) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
+            ret = sendto(_pstRtspServer->client_Vfd[0], pstRetARtpSplit->ppu8Segment[i]+RTSP_INTERLEAVED_FRAME_SIZE, pstRetARtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+            CHECK((ret == pstRetARtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
             //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
         }
     }
@@ -1422,8 +1450,8 @@ static int _SendVFrameH264(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
             int i = 0;
             for (i = 0; i < pstRetVRtpSplit->u32SegmentCount; i++)
             {
-                ret = sendto(_pstRtspServer->client_Vfd[0], pstRetVRtpSplit->ppu8Segment[i]+4, pstRetVRtpSplit->pU32SegmentSize[i]-4, 0, (struct sockaddr *)&Addr, sizeof(Addr));
-                CHECK((ret == pstRetVRtpSplit->pU32SegmentSize[i]-4) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
+                ret = sendto(_pstRtspServer->client_Vfd[0], pstRetVRtpSplit->ppu8Segment[i]+RTSP_INTERLEAVED_FRAME_SIZE, pstRetVRtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+                CHECK((ret == pstRetVRtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
                 //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
             }
         }
@@ -1498,8 +1526,8 @@ static int _SendVFrameH265(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServer
             int i = 0;
             for (i = 0; i < pstRetVRtpSplit->u32SegmentCount; i++)
             {
-                ret = sendto(_pstRtspServer->client_Vfd[0], pstRetVRtpSplit->ppu8Segment[i]+4, pstRetVRtpSplit->pU32SegmentSize[i]-4, 0, (struct sockaddr *)&Addr, sizeof(Addr));
-                CHECK((ret == pstRetVRtpSplit->pU32SegmentSize[i]-4) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
+                ret = sendto(_pstRtspServer->client_Vfd[0], pstRetVRtpSplit->ppu8Segment[i]+RTSP_INTERLEAVED_FRAME_SIZE, pstRetVRtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+                CHECK((ret == pstRetVRtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
                 //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
             }
         }
@@ -1628,6 +1656,9 @@ void* rtsp_process(void* _pstSession)
     stRtspServer.server_Aport[0] = base_port++;
     stRtspServer.server_Aport[1] = base_port++;
     
+    stRtspServer.bVSupport = 1;
+    stRtspServer.bASupport = 0;
+    
     char* data = NULL;
     int len = 0;
     while (pclient->running)
@@ -1636,19 +1667,11 @@ void* rtsp_process(void* _pstSession)
         {
             u32ExpectTimeout = GENERAL_RWTIMEOUT;
             u32Timeout = select_rtimeout(stRtspServer.hndSocket);
-            if (u32Timeout > u32ExpectTimeout)
-            {
-                WRN("Read  Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-                break;
-            }
+            GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Read  Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
 
             u32ExpectTimeout = GENERAL_RWTIMEOUT;
             u32Timeout = select_wtimeout(stRtspServer.hndSocket);
-            if (u32Timeout > u32ExpectTimeout)
-            {
-                WRN("Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-                break;
-            }
+            GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
 
             do
             {
@@ -1682,11 +1705,7 @@ void* rtsp_process(void* _pstSession)
             {
                 u32ExpectTimeout = GENERAL_RWTIMEOUT;
                 u32Timeout = select_wtimeout(stRtspServer.hndSocket);
-                if (u32Timeout > u32ExpectTimeout)
-                {
-                    WRN("Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-                    break;
-                }
+                GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
             }
             else if (stRtspServer.enTranType == TRANS_TYPE_UDP)
             {
@@ -1720,17 +1739,17 @@ void* rtsp_process(void* _pstSession)
             frame_info_s* frame = frame_pool_get(stRtspServer.hndReader);
             if (frame)
             {
-                if (frame->type == FRAME_TYPE_H264)
+                if (stRtspServer.bVEnable && frame->type == FRAME_TYPE_H264)
                 {
                     ret = _SendVFrameH264(frame, &stRtspServer);
                     GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
                 }
-                else if (frame->type == FRAME_TYPE_H265)
+                else if (stRtspServer.bVEnable &&  frame->type == FRAME_TYPE_H265)
                 {
                     ret = _SendVFrameH265(frame, &stRtspServer);
                     GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
                 }
-                else if (frame->type == FRAME_TYPE_G711A)
+                else if (stRtspServer.bAEnable && frame->type == FRAME_TYPE_G711A)
                 {
                     ret = _SendAFrameG711A(frame, &stRtspServer);
                     GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
@@ -1756,10 +1775,8 @@ void* rtsp_process(void* _pstSession)
                 ret = select_rw(stRtspServer.hndSocket);
                 GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
             }
-
             break;
         }
-
     }
 
 _EXIT:

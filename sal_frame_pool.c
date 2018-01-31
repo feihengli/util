@@ -3,6 +3,7 @@
 #include "sal_list.h"
 #include "sal_malloc.h"
 #include "sal_frame_pool.h"
+#include "sps_pps_parser.h"
 
 typedef struct frame_pool_s
 {
@@ -242,6 +243,19 @@ handle frame_pool_register(handle hndFramePool, int head)
         CHECK(ret > 0 && sizeof(pstReader->pps) >= ret, NULL, "error with %#x\n", ret);
         memcpy(pstReader->pps, pstLastVKeyFrame->data+pstReader->sps_size, ret);
         pstReader->pps_size = ret;
+        
+        //SPS sps_ptr;
+        //memset(&sps_ptr, 0, sizeof(sps_ptr));
+        //get_bit_context gbc;
+        //memset(&gbc, 0, sizeof(gbc));
+        //gbc.buf = pstReader->sps+5;
+        //gbc.buf_size = pstReader->sps_size-5;
+        //h264dec_seq_parameter_set(&gbc, &sps_ptr);
+        //
+        //DBG("resolution %dx%d\n", h264_get_width(&sps_ptr), h264_get_height(&sps_ptr));
+        //float framerate = 0.0;
+        //h264_get_framerate(&framerate, &sps_ptr);
+        //DBG("framerate: %f\n", framerate);
         
         // 把获取到的sps pps 去掉开始码 00 00 00 01
         pstReader->sps_size -= 4;

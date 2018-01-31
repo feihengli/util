@@ -221,11 +221,8 @@ typedef struct NALU_t
     unsigned short lost_packets;  //! true, if packet loss is detected
 } NALU_t;
 
-#define UDP_MAX_SIZE (1399)
-//#define H264 (96)
-//#define H265 (96)
-//#define AMR (97)
-//#define G711 (0)
+//在udp传输模式、大分辨下I帧较大，RTP封包需较大vlc才能接收出图
+#define UDP_MAX_SIZE (4*1024) //(1399) //(8*1024)
 
 typedef struct RTP_SPLIT_S
 {
