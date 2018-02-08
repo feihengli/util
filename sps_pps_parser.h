@@ -150,15 +150,58 @@ typedef struct get_bit_context
     int             cur_bit_pos;  /*当前读取位置*/  
 }get_bit_context;  
 
-int h264dec_seq_parameter_set(get_bit_context *buf, SPS *sps_ptr);  
-int h264dec_picture_parameter_set(void *buf, PPS *pps_ptr);  
+/*
+ 函 数 名: h264dec_seq_parameter_set
+ 功能描述: 解析h264的sps
+ 输入参数: buf 结构体、输入sps和sps的长度，需带开始码 00 00 00 01
+ 输出参数: sps_ptr 解析后的sps信息
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int h264dec_seq_parameter_set(get_bit_context *buf, SPS *sps_ptr); 
 
+/*
+ 函 数 名: h264dec_picture_parameter_set
+ 功能描述: 解析h264的pps
+ 输入参数: buf 结构体、输入pps和pps的长度，需带开始码 00 00 00 01
+ 输出参数: pps_ptr 解析后的pps信息
+ 返 回 值: 成功返回0,失败返回小于0
+*/ 
+int h264dec_picture_parameter_set(get_bit_context *buf, PPS *pps_ptr);  
+
+/*
+ 函 数 名: h264_get_width
+ 功能描述: 获取视频的宽
+ 输入参数: sps_ptr sps信息结构体
+ 输出参数: 无
+ 返 回 值: 成功返回0,失败返回小于0
+*/ 
 int h264_get_width(SPS *sps_ptr);  
 
+/*
+ 函 数 名: h264_get_height
+ 功能描述: 获取视频的高
+ 输入参数: sps_ptr sps信息结构体
+ 输出参数: 无
+ 返 回 值: 成功返回0,失败返回小于0
+*/ 
 int h264_get_height(SPS *sps_ptr);  
 
+/*
+ 函 数 名: h264_get_format
+ 功能描述: 获取视频的格式
+ 输入参数: sps_ptr sps信息结构体
+ 输出参数: 无
+ 返 回 值: 成功返回0,失败返回小于0
+*/ 
 int h264_get_format(SPS *sps_ptr);  
 
+/*
+ 函 数 名: h264_get_framerate
+ 功能描述: 获取视频的帧率，前提sps的vui有效，否则获取到的帧率为0
+ 输入参数: sps_ptr sps信息结构体
+ 输出参数: framerate 视频帧率
+ 返 回 值: 成功返回0,失败返回小于0
+*/ 
 int h264_get_framerate(float *framerate, SPS *sps_ptr);  
 
 

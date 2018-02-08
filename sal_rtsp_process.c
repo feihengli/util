@@ -100,8 +100,10 @@ static int _RtspComplete(void* _pData, int _u32DataLen, int* _pu32CompleteLen)
 {
     //DBG("_u32DataLen=%u\n", _u32DataLen);
     *_pu32CompleteLen = 0;
-    char* szLine = (char*)_pData;
-    szLine[_u32DataLen] = 0;
+    char szLine[4*1024];
+    int minSize = (sizeof(szLine) > _u32DataLen) ? _u32DataLen : sizeof(szLine);
+    memcpy(szLine, _pData, minSize);
+    szLine[sizeof(szLine)-1] = 0;
 
 /*
     if (memcmp(_pData, "OPTIONS", strlen("OPTIONS"))

@@ -122,7 +122,7 @@ static int select_read(select_s* pstSelect)
     int ret = cache_writable(pstSelect->hndcache, &begin, &len);
     CHECK(!ret, -1, "error with %#x\n", ret);
 
-    if (len < 1024)
+    if (len == 0 || len < 1024)
     {
         ret = cache_clean(pstSelect->hndcache);
         CHECK(!ret, -1, "error with %#x\n", ret);
@@ -161,20 +161,18 @@ static int select_read(select_s* pstSelect)
     util_time_abs(&pstSelect->last_rtime);
     ret = cache_offset_writable(pstSelect->hndcache, recv_len);
     CHECK(!ret, -1, "error with %#x\n", ret);
-
     while (pstSelect->complete_cb)
     {
         begin = NULL;
         len = 0;
         ret = cache_readable(pstSelect->hndcache, &begin, &len);
         CHECK(!ret, -1, "error with %#x\n", ret);
-
         if (begin && len > 0)
         {
             int s32CompleteLen = 0;
             ret = pstSelect->complete_cb(begin, len, &s32CompleteLen, pstSelect->cb_param);
             CHECK(ret == 0, -1, "error with %#x\n", ret);
-
+            CHECK(s32CompleteLen <= len, -1, "error with len[%d], s32CompleteLen[%d]\n", len, s32CompleteLen);
             if (s32CompleteLen > 1)
             {
                 data_pack_s stDataPack;
@@ -197,6 +195,10 @@ static int select_read(select_s* pstSelect)
                 ret = cache_offset_readable(pstSelect->hndcache, 1);
                 CHECK(!ret, -1, "error with %#x\n", ret);
                 continue; // continue check
+            }
+            else if (-1 == s32CompleteLen)
+            {
+                break; 
             }
         }
         break;

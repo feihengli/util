@@ -56,45 +56,11 @@ int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
 int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type)
 {
     int ret = -1;
-    FRAME_TYPE_E type = FRAME_TYPE_INVALID;
-    if (encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        type = FRAME_TYPE_H264;
-    }
-    else if (encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        type = FRAME_TYPE_H265;
-    }
     
     if (1 ==stream)
     {
-        unsigned char* pu8Frame = NULL;
-        unsigned int u32FrameSize = 0;
-        unsigned char* pu8Tmp = (unsigned char*)frame;
-        unsigned int u32TmpSize = len;
-        int offset;
-        do
-        {
-            offset = rtp_vframe_split(pu8Tmp, u32TmpSize);
-            if (offset != -1)
-            {
-                //DBG("offset=%d", offset);
-                pu8Frame = pu8Tmp;
-                u32FrameSize = offset;
-
-                pu8Tmp += offset;
-                u32TmpSize -= offset;
-            }
-            else
-            {
-                //DBG("u32TmpSize=%u", u32TmpSize);
-                pu8Frame = pu8Tmp;
-                u32FrameSize = u32TmpSize;
-            }
-            ret = mp4VEncoderWrite(g_hndMp4, pu8Frame, u32FrameSize);
-            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-        }
-        while (offset != -1);
+        ret = mp4VEncoderWrite(g_hndMp4, frame, len);
+        CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     }
     
     return 0;
@@ -153,6 +119,8 @@ int main(int argc, char** argv)
     ret = sal_sys_init(&video);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys video init done.\n");
+    
+    frame_source_mp4_init("test.mp4", NULL);
     
     while (!test_exit)
     {

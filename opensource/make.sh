@@ -77,4 +77,14 @@ ${COMPILE}-ranlib ./.libs/libmp4v2.a
 cp ./.libs/libmp4v2.a ../ -af
 cd ../
 
+#iperf3
+rm -rf iperf-3.1.3
+tar -xjvf iperf-3.1.3-source.tar.gz
+cd ./iperf-3.1.3;
+./configure --host=${COMPILE}
+make
+cp ./src/.libs/iperf3 ../ -af
+cp ./src/.libs/libiperf.so.0 ../ -af
+cd ../
+
 

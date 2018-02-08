@@ -11,7 +11,8 @@
 #include "sal_debug.h"
 #include "sal_curl.h"
 #include "sal_util.h"
-#include "sal_md5.h"
+#include "libmd5/sal_md5.h"
+#include "http_client.h"
 
 static int test_exit = 0;
 
@@ -44,28 +45,29 @@ int main(int argc, char** argv)
 {
     int ret = -1;
     init_signals();
-
+    
+    #if 0
     handle g_hndCurlWrapper = curl_wrapper_init(200);
     CHECK(g_hndCurlWrapper, -1, "Error with: %#x\n", g_hndCurlWrapper);
 
-    //char* http_url = "http://192.168.0.32:8186/mktech_auto_update_app";
-    char* http_url = "http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/mktech_auto_update_app";
+    char* http_url = "http://192.168.0.32:8186/uImage";
+    //char* http_url = "http://rdtest.myhiott.com:8081/upgrade/ftp_test/lifeiheng/mktech_auto_update_app";
     ret = curl_wrapper_StartDownload2Mem(g_hndCurlWrapper, http_url, NULL, NULL);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
-    unsigned char digest[64];
-    memset(digest, 0, sizeof(digest));
+    //unsigned char digest[64];
+    //memset(digest, 0, sizeof(digest));
 
-    md5_filesum("./ntpc", digest);
-    DBG("md5: %s\n", digest);
+    //md5_filesum("./ntpc", digest);
+    //DBG("md5: %s\n", digest);
 
-    int size = util_file_size("./ntpc");
-    char* bb = malloc(size);
-    util_file_read("./ntpc", bb, size);
+    //int size = util_file_size("./ntpc");
+    //char* bb = malloc(size);
+    //util_file_read("./ntpc", bb, size);
 
-    memset(digest, 0, sizeof(digest));
-    md5_memsum(bb, size, digest);
-    DBG("md5: %s\n", digest);
+    //memset(digest, 0, sizeof(digest));
+    //md5_memsum(bb, size, digest);
+    //DBG("md5: %s\n", digest);
 
     CURL_STATUS_S stStatus;
     memset(&stStatus, 0, sizeof(stStatus));
@@ -91,13 +93,42 @@ int main(int argc, char** argv)
     ret = curl_wrapper_Download2MemGet(g_hndCurlWrapper, &output, &len);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
-    memset(digest, 0, sizeof(digest));
-    md5_memsum(output, len, digest);
-    DBG("111md5: %s\n", digest);
+    //memset(digest, 0, sizeof(digest));
+    //md5_memsum(output, len, digest);
+    //DBG("111md5: %s\n", digest);
 
     curl_wrapper_Stop(g_hndCurlWrapper);
     curl_wrapper_destroy(g_hndCurlWrapper);
     g_hndCurlWrapper = NULL;
+    #endif
+    
+    
+    handle hndHttpClient = http_client_init("http://192.168.0.32:8186/11/", 10*1000);
+    int progress = 0;
+    while (!test_exit)
+    {
+        HTTP_STATUS_E status = HTTP_STATUS_INVALID;
+        ret = http_client_Query(hndHttpClient, &status);
+        CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+        
+        if (status == HTTP_STATUS_PROGRESS || status == HTTP_STATUS_FINISH_OK)
+        {
+            ret = http_client_ProgressGet(hndHttpClient, &progress);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+
+            DBG("Progress: %d\n", progress);
+            if (progress == 100)
+            {
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+        usleep(1*1000*1000);
+    }
+    getchar();
 
     return 0;
 }

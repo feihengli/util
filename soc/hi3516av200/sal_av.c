@@ -2013,6 +2013,68 @@ int sal_sys_init(sal_video_s* video)
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %s.\n", strerror(errno));
     usleep(1000);
     pthread_attr_destroy(&attr);
+    
+    //动态修改分辨率测试
+    VENC_CHN_ATTR_S stAttr;
+    memset(&stAttr, 0, sizeof(stAttr));
+    s32Ret = HI_MPI_VENC_GetChnAttr(0, &stAttr);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    DBG("%dx%d\n", stAttr.stVeAttr.stAttrH265e.u32PicWidth, stAttr.stVeAttr.stAttrH265e.u32PicHeight);
+    stAttr.stVeAttr.stAttrH265e.u32PicWidth = 3840;
+    stAttr.stVeAttr.stAttrH265e.u32PicHeight = 2160;
+    
+    s32Ret = HI_MPI_VENC_SetChnAttr(0, &stAttr);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    //VPSS_CHN_MODE_S stVpssMode;
+    //memset(&stVpssMode, 0, sizeof(stVpssMode));
+    //s32Ret = HI_MPI_VPSS_GetChnMode(0, 1, &stVpssMode);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    //DBG("%dx%d\n", stVpssMode.u32Width, stVpssMode.u32Height);
+    //stVpssMode.u32Width = 3840;
+    //stVpssMode.u32Height = 2160;
+
+    //s32Ret = HI_MPI_VPSS_SetChnMode(0, 1, &stVpssMode);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    //VPSS_EXT_CHN_ATTR_S stExtChnAttr;
+    //memset(&stExtChnAttr, 0, sizeof(stExtChnAttr));
+    //s32Ret = HI_MPI_VPSS_GetExtChnAttr(0, 4, &stExtChnAttr);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    //DBG("%dx%d\n", stExtChnAttr.u32Width, stExtChnAttr.u32Height);
+    //stExtChnAttr.u32Width = 3840;
+    //stExtChnAttr.u32Height = 2160;
+
+    //s32Ret = HI_MPI_VPSS_SetExtChnAttr(0, 4, &stExtChnAttr);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    //VI_DEV_ATTR_S  stViDevAttr;
+    //memset(&stViDevAttr, 0, sizeof(stViDevAttr));;
+    //
+    //s32Ret = HI_MPI_VI_GetDevAttr(0, &stViDevAttr);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //
+    //DBG("%dx%d\n", stViDevAttr.stDevRect.u32Width, stViDevAttr.stDevRect.u32Height);
+    //stViDevAttr.stDevRect.u32Width = 3840;
+    //stViDevAttr.stDevRect.u32Height = 2160;
+    //
+    //s32Ret = HI_MPI_VI_DisableChn(0);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //
+    //s32Ret = HI_MPI_VI_DisableDev(0);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //
+    //s32Ret = HI_MPI_VI_SetDevAttr(0, &stViDevAttr);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //
+    //s32Ret = HI_MPI_VI_EnableDev(0);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //
+    //s32Ret = HI_MPI_VI_EnableChn(0);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     return 0;
 }
@@ -2166,6 +2228,35 @@ int sal_video_framerate_set(int stream, int framerate)
         return 0;
     }
 */
+
+    int s32Ret = -1;
+
+
+    pthread_mutex_lock(&g_av_args->mutex);
+    
+    DBG("stream: %d, old framerate: %d, new framerate: %d\n", stream, g_av_args->video.stream[stream].framerate, framerate);
+    g_av_args->video.stream[stream].framerate = framerate;
+
+    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
+    {
+        s32Ret = venc_set_h264base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
+    {
+        s32Ret = venc_set_h265base_args(stream);
+        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+
+    pthread_mutex_unlock(&g_av_args->mutex);
+
+    return 0;
+}
+
+int sal_video_resolution_set(int stream, int framerate)
+{
+    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
+    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
 
     int s32Ret = -1;
 

@@ -6,7 +6,7 @@
 
 #include "sal_debug.h"
 #include "sal_util.h"
-#include "bmp.h"
+#include "picture_bmp.h"
 
 #if 1
 void CreateRGBData(unsigned char *rgbout,int width,int height)

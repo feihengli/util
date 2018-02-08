@@ -179,14 +179,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\bmp.c"
-			>
-		</File>
-		<File
-			RelativePath=".\bmp.h"
-			>
-		</File>
-		<File
 			RelativePath=".\common_include\libjpeg-turbo\bmp.h"
 			>
 		</File>
@@ -203,11 +195,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\cdjpeg.h"
+			RelativePath=".\common_include\libjpeg-turbo\cdjpeg.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\cdjpeg.h"
+			RelativePath=".\common_include\libjpeg\cdjpeg.h"
 			>
 		</File>
 		<File
@@ -259,6 +251,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\file_frame_source_mp4.c"
+			>
+		</File>
+		<File
+			RelativePath=".\file_frame_source_mp4.h"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\mp4v2\file_prop.h"
 			>
 		</File>
@@ -276,6 +276,14 @@
 		</File>
 		<File
 			RelativePath=".\hi3518ev200.make"
+			>
+		</File>
+		<File
+			RelativePath=".\http_client.c"
+			>
+		</File>
+		<File
+			RelativePath=".\http_client.h"
 			>
 		</File>
 		<File
@@ -327,11 +335,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jdct.h"
+			RelativePath=".\common_include\libjpeg\jdct.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jdct.h"
+			RelativePath=".\common_include\libjpeg-turbo\jdct.h"
 			>
 		</File>
 		<File
@@ -351,11 +359,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jerror.h"
+			RelativePath=".\common_include\libjpeg-turbo\jerror.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jerror.h"
+			RelativePath=".\common_include\libjpeg\jerror.h"
 			>
 		</File>
 		<File
@@ -367,11 +375,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jmemsys.h"
+			RelativePath=".\common_include\libjpeg-turbo\jmemsys.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jmemsys.h"
+			RelativePath=".\common_include\libjpeg\jmemsys.h"
 			>
 		</File>
 		<File
@@ -391,19 +399,19 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jpegint.h"
-			>
-		</File>
-		<File
 			RelativePath=".\common_include\libjpeg\jpegint.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jpeglib.h"
+			RelativePath=".\common_include\libjpeg-turbo\jpegint.h"
 			>
 		</File>
 		<File
 			RelativePath=".\common_include\libjpeg-turbo\jpeglib.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\libjpeg\jpeglib.h"
 			>
 		</File>
 		<File
@@ -415,11 +423,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jversion.h"
+			RelativePath=".\common_include\libjpeg-turbo\jversion.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jversion.h"
+			RelativePath=".\common_include\libjpeg\jversion.h"
 			>
 		</File>
 		<File
@@ -431,7 +439,15 @@
 			>
 		</File>
 		<File
+			RelativePath=".\app\mp4record\Makefile"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\libmd5\md5.h"
+			>
+		</File>
+		<File
+			RelativePath=".\app\mp4record\mp4record.c"
 			>
 		</File>
 		<File
@@ -460,6 +476,14 @@
 		</File>
 		<File
 			RelativePath=".\common_include\libdigest\our_md5.h"
+			>
+		</File>
+		<File
+			RelativePath=".\picture_bmp.c"
+			>
+		</File>
+		<File
+			RelativePath=".\picture_bmp.h"
 			>
 		</File>
 		<File
@@ -701,11 +725,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\transupp.h"
+			RelativePath=".\common_include\libjpeg\transupp.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\transupp.h"
+			RelativePath=".\common_include\libjpeg-turbo\transupp.h"
 			>
 		</File>
 		<File

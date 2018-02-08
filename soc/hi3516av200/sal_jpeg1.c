@@ -53,7 +53,6 @@ int jpeg1_destroy_chn(int channel)
     return HI_SUCCESS;
 }
 
-
 int jpeg1_set_Qfactor(int channel, int Qfactor)
 {
     HI_S32 s32Ret = HI_FAILURE;
@@ -252,9 +251,9 @@ int jpeg1_get_picture(int channel, unsigned char** out, int* len)
     return HI_SUCCESS;
 }
 
-int jpeg1_release_picture(int channel, unsigned char** out, int* len)
+int jpeg1_release_picture(int channel, unsigned char** in, int* len)
 {
-    free((*out));
+    free((*in));
     *len = 0;
     return 0;
 }

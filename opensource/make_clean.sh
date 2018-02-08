@@ -24,6 +24,9 @@ rm -rf libdigest
 #libmp4v2.a
 rm -rf mp4v2-2.0.0
 
+#iperf3
+rm -rf iperf-3.1.3
+
 rm -rf *.a
 
 

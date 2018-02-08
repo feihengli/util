@@ -634,7 +634,7 @@ static int more_rbsp_data(void *buf)
 *  @post 
 *  @note: 用法参考sps解析 
 */  
-int h264dec_picture_parameter_set(void *buf_ptr, PPS *pps_ptr)  
+int h264dec_picture_parameter_set(get_bit_context *buf_ptr, PPS *pps_ptr)  
 {  
     PPS *pps = pps_ptr;  
     int ret = 0;  
