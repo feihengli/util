@@ -108,7 +108,7 @@ int bmp_demo()
     CreateRGBData(rgbbuffer,400,400);
     
     unsigned char* bmp = NULL;
-    int size = 0;
+    unsigned int size = 0;
     bmp_create(rgbbuffer,400,400, &bmp, &size);
     util_file_write("test.bmp", bmp, size);
     free(rgbbuffer);

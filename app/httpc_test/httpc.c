@@ -103,7 +103,7 @@ int main(int argc, char** argv)
     #endif
     
     
-    handle hndHttpClient = http_client_init("http://192.168.0.32:8186/11/", 10*1000);
+    handle hndHttpClient = http_client_init("http://192.168.0.32/DvrServer", 10*1000);
     int progress = 0;
     while (!test_exit)
     {

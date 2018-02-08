@@ -1,17 +1,11 @@
 #!/bin/sh
 #编译所有第三方开源库，并拷贝静态库到当前目录
 
-#COMPILE=arm-hisiv300-linux
-COMPILE=arm-hisiv600-linux
-
-echo "COMPILE=${COMPILE}"
-sleep 3
-
 #libcurl.a
 rm -rf curl-7.53.1
 tar -xzvf curl-7.53.1.tar.gz
 cd ./curl-7.53.1;
-./configure CC=${COMPILE}-gcc --host=arm-linux
+./configure
 make
 cp ./lib/.libs/libcurl.a ../ -af
 cd ../
@@ -20,7 +14,7 @@ cd ../
 rm -rf libixml-1.0
 tar -xzvf libixml-1.0.tar.gz
 cd ./libixml-1.0;
-make CROSS=${COMPILE}-
+make CROSS=
 cp ./release/libixml.a ../ -af
 cd ../
 
@@ -28,7 +22,7 @@ cd ../
 rm -rf jpeg-8c
 tar -xzvf jpegsrc.v8c.tar.gz
 cd ./jpeg-8c;
-./configure --host=${COMPILE}
+./configure
 make
 cp ./.libs/libjpeg.a ../ -af
 cd ../
@@ -37,7 +31,7 @@ cd ../
 rm -rf libjpeg-turbo-1.5.3
 tar -xzvf libjpeg-turbo-1.5.3.tar.gz
 cd ./libjpeg-turbo-1.5.3;
-./configure --host=${COMPILE}
+./configure
 make
 cp ./.libs/libturbojpeg.a ../ -af
 cd ../
@@ -46,7 +40,7 @@ cd ../
 rm -rf libmd5
 tar -xzvf libmd5.tar.gz
 cd ./libmd5;
-make CROSS_COMPILE=${COMPILE}-
+make CROSS_COMPILE=
 cp ./libmd5.a ../ -af
 cd ../
 
@@ -54,7 +48,7 @@ cd ../
 rm -rf libtinyxml
 tar -xzvf libtinyxml.tar.gz
 cd ./libtinyxml;
-make CROSS_COMPILE=${COMPILE}-
+make CROSS_COMPILE=
 cp ./libtinyxml.a ../ -af
 cd ../
 
@@ -62,7 +56,7 @@ cd ../
 rm -rf libdigest
 tar -xzvf libdigest.tar.gz
 cd ./libdigest;
-make CROSS_COMPILE=${COMPILE}-
+make CROSS_COMPILE=
 cp ./libdigest.a ../ -af
 cd ../
 
@@ -70,10 +64,10 @@ cd ../
 rm -rf mp4v2-2.0.0
 tar -xjvf mp4v2-2.0.0.tar.bz2
 cd ./mp4v2-2.0.0;
-./configure --host=${COMPILE}
+./configure
 make
-${COMPILE}-strip --strip-debug --strip-unneeded ./.libs/libmp4v2.a
-${COMPILE}-ranlib ./.libs/libmp4v2.a
+strip --strip-debug --strip-unneeded ./.libs/libmp4v2.a
+ranlib ./.libs/libmp4v2.a
 cp ./.libs/libmp4v2.a ../ -af
 cd ../
 
@@ -82,13 +76,11 @@ rm -rf iperf3 libiperf.so.0
 rm -rf iperf-3.1.3
 tar -xzvf iperf-3.1.3-source.tar.gz
 cd ./iperf-3.1.3;
-./configure --host=${COMPILE}
+./configure
 make
 cp ./src/.libs/iperf3 ../ -af
 cp ./src/.libs/libiperf.so.0.0.0 ../libiperf.so.0 -af
 cd ../
 
 
-#${COMPILE}-strip --strip-debug --strip-unneeded *.a
-
-
+#strip --strip-debug --strip-unneeded *.a
