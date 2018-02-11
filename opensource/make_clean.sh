@@ -28,6 +28,10 @@ rm -rf mp4v2-2.0.0
 rm -rf iperf3 libiperf.so.0
 rm -rf iperf-3.1.3
 
+#iptables
+rm -rf iptables
+rm -rf iptables-1.4.21
+
 rm -rf *.a
 
 

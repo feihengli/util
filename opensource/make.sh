@@ -88,6 +88,18 @@ cp ./src/.libs/iperf3 ../ -af
 cp ./src/.libs/libiperf.so.0.0.0 ../libiperf.so.0 -af
 cd ../
 
+#iptables
+rm -rf iptables
+rm -rf iptables-1.4.21
+tar -xjvf iptables-1.4.21.tar.bz2
+cd ./iptables-1.4.21
+PWD=`pwd`
+./configure --host=${COMPILE} --enable-static --disable-shared --with-xtlibdir=$PWD/extensions/
+make
+cp ./iptables/xtables-multi ../iptables -af
+${COMPILE}-strip ../iptables
+cd ../
+
 
 #${COMPILE}-strip --strip-debug --strip-unneeded *.a
 
