@@ -32,6 +32,10 @@ rm -rf iperf-3.1.3
 rm -rf iptables
 rm -rf iptables-1.4.21
 
+#ethtool
+rm -rf ethtool
+rm -rf ethtool-4.15
+
 rm -rf *.a
 
 

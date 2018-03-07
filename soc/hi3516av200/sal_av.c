@@ -32,12 +32,15 @@ typedef struct sal_av_args
 
     int smartP_enable;
     int gop_times; // smartp gop放大倍数
+    
+    int wdr_enable;
 
     // 根据相应驱动ko插入的参数指定
     int lowdelay_enable;  // 低延迟模式
     int onebuffer_enable; // 单vb模式，需结合低延迟模式才有效
     int onestream_enable;//单包模式/多包模式
     char* multiple_buffer; //多包模式下需要使用buffer来拼合一个帧
+    int online_enable;
 
     int running;
     pthread_t tid;
@@ -295,6 +298,110 @@ static VI_DEV_ATTR_EX_S DEV_ATTR_DC_BASE_EX =
     {0, 0, 1920, 1080}
 };
 
+/*8M outout*/
+VI_DEV_ATTR_S gst_videv_attr =
+{
+    /*接口模式*/
+    VI_MODE_MIPI,
+    /*1、2、4路工作模式*/
+    VI_WORK_MODE_1Multiplex,
+    /* r_mask    g_mask    b_mask*/
+    {0xFFF00000,    0x0},
+    /*逐行or隔行输入*/
+    VI_SCAN_PROGRESSIVE,
+    /*AdChnId*/
+    { -1, -1, -1, -1},
+    /*enDataSeq, 仅支持YUV格式*/
+    VI_INPUT_DATA_YUYV,
+
+    /*同步信息，对应reg手册的如下配置, --bt1120时序无效*/
+    {
+        /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
+        VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL, VI_HSYNC_NEG_HIGH, VI_VSYNC_VALID_SINGAL, VI_VSYNC_VALID_NEG_HIGH,
+            //VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_NORM_PULSE,VI_VSYNC_VALID_NEG_HIGH,
+
+            /*timing信息，对应reg手册的如下配置*/
+            /*hsync_hfb    hsync_act    hsync_hhb*/
+        {0,            3840,        0,
+        /*vsync0_vhb vsync0_act vsync0_hhb*/
+        0,            2160,        0,
+        /*vsync1_vhb vsync1_act vsync1_hhb*/
+        0,            0,            0}
+    },
+        /*使用内部ISP*/
+        VI_PATH_ISP,
+        /*输入数据类型*/
+        VI_DATA_TYPE_RGB,
+        /* bRever */
+        HI_FALSE,
+        /* stDevRect */
+    {12, 40, 3840, 2160},
+    /*stBasAttr*/
+    {
+        {/*stSacleAttr*/
+            {3840, 2160},
+                HI_FALSE,
+
+        },
+        {/*stRephaseAttr*/
+            VI_REPHASE_MODE_NONE,
+                VI_REPHASE_MODE_NONE
+            }
+    }
+};
+
+/*8M outout*/
+VI_DEV_ATTR_S gst_videv_attr_wdr =
+{
+    /*接口模式*/
+    VI_MODE_MIPI,
+    /*1、2、4路工作模式*/
+    VI_WORK_MODE_1Multiplex,
+    /* r_mask    g_mask    b_mask*/
+    {0xFFC00000,    0x0},
+    /*逐行or隔行输入*/
+    VI_SCAN_PROGRESSIVE,
+    /*AdChnId*/
+    { -1, -1, -1, -1},
+    /*enDataSeq, 仅支持YUV格式*/
+    VI_INPUT_DATA_YUYV,
+
+    /*同步信息，对应reg手册的如下配置, --bt1120时序无效*/
+    {
+        /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
+        VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL, VI_HSYNC_NEG_HIGH, VI_VSYNC_VALID_SINGAL, VI_VSYNC_VALID_NEG_HIGH,
+            //VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_NORM_PULSE,VI_VSYNC_VALID_NEG_HIGH,
+
+            /*timing信息，对应reg手册的如下配置*/
+            /*hsync_hfb    hsync_act    hsync_hhb*/
+        {0,            3840,        0,
+        /*vsync0_vhb vsync0_act vsync0_hhb*/
+        0,            2160,        0,
+        /*vsync1_vhb vsync1_act vsync1_hhb*/
+        0,            0,            0}
+    },
+        /*使用内部ISP*/
+        VI_PATH_ISP,
+        /*输入数据类型*/
+        VI_DATA_TYPE_RGB,
+        /* bRever */
+        HI_FALSE,
+        /* stDevRect */
+    {12, 18, 3840, 2160},
+    /*stBasAttr*/
+    {
+        {/*stSacleAttr*/
+            {3840, 2160},
+                HI_FALSE,
+
+        },
+        {/*stRephaseAttr*/
+            VI_REPHASE_MODE_NONE,
+                VI_REPHASE_MODE_NONE
+            }
+    }
+};
+
 static combo_dev_attr_t LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR = 
     {
     .devno = 0,
@@ -358,6 +465,38 @@ static combo_dev_attr_t LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR =
         }
     };
 
+combo_dev_attr_t gst_combo_dev_attr = 
+{
+    .devno = 0,
+    .input_mode = INPUT_MODE_MIPI,
+    //.phy_clk_share = PHY_CLK_SHARE_NONE,
+    .img_rect = {0, 0, 3864, 2218},
+
+    .mipi_attr =
+    {
+        .raw_data_type = RAW_DATA_12BIT,
+        .wdr_mode = HI_MIPI_WDR_MODE_NONE,
+        .lane_id = {0, 1, 2, 3, -1, -1, -1, -1}
+    }
+};
+
+combo_dev_attr_t gst_combo_dev_attr_wdr = 
+{
+    .devno = 0,
+    .input_mode = INPUT_MODE_MIPI,
+    //.phy_clk_share = PHY_CLK_SHARE_NONE,
+    //.img_rect = {0, 0, 3864, 2182},
+    .img_rect = {0, 0, 3864, 2182},
+
+    .mipi_attr =
+    {
+        .raw_data_type = RAW_DATA_10BIT,
+        .wdr_mode = HI_MIPI_WDR_MODE_DOL,
+        .lane_id = {0, 1, 2, 3, -1, -1, -1, -1}
+    }
+};
+
+
 static int sys_vb_size(int width, int height, int align_width)
 {
     int size = CEILING_2_POWER(width, align_width) * CEILING_2_POWER(height, align_width) * 1.5;
@@ -413,6 +552,11 @@ static int sys_vb_init()
 
             if (!g_av_args->ext_chn_enable && g_av_args->video.rotate)
                 stVbConf.astCommPool[i].u32BlkCnt += 2;
+        }
+        // offline
+        if (0 == i && !g_av_args->online_enable)
+        {
+            stVbConf.astCommPool[i].u32BlkCnt += 3;
         }
         // 单buffer模式
         if (0 == i && g_av_args->onebuffer_enable)
@@ -526,6 +670,14 @@ static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
         //memcpy(stcomboDevAttr.lvds_attr.sync_code, sync_code, sizeof(sync_code));
         memcpy(&stcomboDevAttr, &LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR, sizeof(stcomboDevAttr));
     }
+    else if (pstViConfig->enViMode == SONY_IMX274_MIPI_8M_30FPS)
+    {
+        memcpy(&stcomboDevAttr, &gst_combo_dev_attr, sizeof(stcomboDevAttr));
+        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
+        {
+            memcpy(&stcomboDevAttr, &gst_combo_dev_attr_wdr, sizeof(stcomboDevAttr));
+        }
+    }
     else
     {
         DBG("Unknown sensor type: %d.\n", pstViConfig->enViMode);
@@ -571,11 +723,10 @@ static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
     return HI_SUCCESS;
 }
 
-static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_MODE_E enViMode)
+static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_CONFIG_S* pstViConfig)
 {
-    HI_S32 s32Ret;
+    HI_S32 s32Ret = -1;
     HI_S32 s32IspDev = 0;
-    ISP_WDR_MODE_S stWdrMode;
 
     VI_DEV_ATTR_S  stViDevAttr;
 
@@ -619,6 +770,14 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_MODE_E enViMode)
     {
         memcpy(&stViDevAttr, &DEV_ATTR_LVDS_BASE, sizeof(stViDevAttr));
     }
+    else if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
+    {
+        memcpy(&stViDevAttr, &gst_videv_attr, sizeof(stViDevAttr));
+        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
+        {
+            memcpy(&stViDevAttr, &gst_videv_attr_wdr, sizeof(stViDevAttr));
+        }
+    }
     else
     {
         DBG("Unknown sensor %d.\n", g_av_args->sensor_type);
@@ -652,9 +811,13 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_MODE_E enViMode)
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
 
-    if ((SAMPLE_VI_MODE_BT1120_1080P != enViMode)
-        &&(SAMPLE_VI_MODE_BT1120_720P != enViMode))
+    if ((SAMPLE_VI_MODE_BT1120_1080P != pstViConfig->enViMode)
+        &&(SAMPLE_VI_MODE_BT1120_720P != pstViConfig->enViMode))
     {
+        ISP_WDR_MODE_S stWdrMode;
+        memset(&stWdrMode, 0, sizeof(stWdrMode));
+        stWdrMode.enWDRMode = pstViConfig->enWDRMode;
+        
         s32Ret = HI_MPI_ISP_GetWDRMode(s32IspDev, &stWdrMode);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
@@ -783,12 +946,20 @@ static int isp_init(WDR_MODE_E  enWDRMode)
     stAwbLib.s32Id = 0;
     strcpy(stAwbLib.acLibName, HI_AWB_LIB_NAME);
     
-    if (g_av_args->sensor_type == SONY_IMX226_LVDS_12M_30FPS)
+    ISP_SNS_OBJ_S* pstSnsObj = NULL;
+    
+    //extern ISP_SNS_OBJ_S stSnsImx226Obj;
+    //pstSnsObj = &stSnsImx226Obj;
+    
+    if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
     {
-        extern ISP_SNS_OBJ_S stSnsImx226Obj;
-        s32Ret = stSnsImx226Obj.pfnRegisterCallback(IspDev, &stAeLib, &stAwbLib);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+        extern ISP_SNS_OBJ_S stSnsImx274Obj;
+        pstSnsObj = &stSnsImx274Obj;
     }
+
+    CHECK(pstSnsObj != NULL, HI_FAILURE, "Error with %#x.\n", pstSnsObj);
+    s32Ret = pstSnsObj->pfnRegisterCallback(IspDev, &stAeLib, &stAwbLib);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     
     /* 2. register hisi ae lib */
     stLib.s32Id = 0;
@@ -819,6 +990,7 @@ static int isp_init(WDR_MODE_E  enWDRMode)
 
     /* 6. isp set WDR mode */
     ISP_WDR_MODE_S stWdrMode;
+    memset(&stWdrMode, 0, sizeof(stWdrMode));
     stWdrMode.enWDRMode  = enWDRMode;
     s32Ret = HI_MPI_ISP_SetWDRMode(0, &stWdrMode);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
@@ -844,6 +1016,10 @@ static int isp_init(WDR_MODE_E  enWDRMode)
         stPubAttr.enBayer = BAYER_RGGB;
     }
     else if (g_av_args->sensor_type == SONY_IMX226_LVDS_12M_30FPS)
+    {
+        stPubAttr.enBayer = BAYER_RGGB;
+    }
+    else if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
     {
         stPubAttr.enBayer = BAYER_RGGB;
     }
@@ -953,7 +1129,12 @@ static int vi_start_all()
     stViConfig.enRotate   = ROTATE_NONE;
     stViConfig.enNorm     = VIDEO_ENCODING_MODE_AUTO;
     stViConfig.enWDRMode  = WDR_MODE_NONE;
-
+    
+    if (g_av_args->wdr_enable)
+    {
+        stViConfig.enWDRMode = WDR_MODE_2To1_LINE;
+    }
+    
     HI_U32 i, s32Ret = HI_SUCCESS;
     VI_DEV ViDev;
     VI_CHN ViChn;
@@ -974,7 +1155,7 @@ static int vi_start_all()
     for (i = 0; i < u32DevNum; i++)
     {
         ViDev = i;
-        s32Ret = vi_set_dev(ViDev, stViConfig.enViMode);
+        s32Ret = vi_set_dev(ViDev, &stViConfig);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
 
@@ -1874,6 +2055,9 @@ int sal_sys_init(sal_video_s* video)
     //imx226解决VI无中断问题
     //修改VI、VPSS、ISP时钟。详见\Hi3519V101_SDK_V2.0.4.0\mpp_big-little\component\isp\sensor\readme_cn.txt
     //himm 0x1201004c 0x00094C42;himm 0x12010054 0x00024042
+    //imx274
+    //himm 0x1201004c 0x00094C43;vi0 clk = 600M
+    //himm 0x12010054 0x00008043;isp clk = vi clk(600M)
     g_av_args = (sal_av_args*)malloc(sizeof(sal_av_args));
     CHECK(g_av_args != NULL, HI_FAILURE, "malloc %d bytes failed.\n", sizeof(sal_av_args));
 
@@ -1905,6 +2089,13 @@ int sal_sys_init(sal_video_s* video)
         g_av_args->ext_chn_enable = 1;
         g_av_args->ext_chn_number = 4;
     }
+    if (g_av_args->scale_enable && g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
+    {
+        g_av_args->vi_width = 3840;
+        g_av_args->vi_height = 2160;
+        g_av_args->ext_chn_enable = 1;
+        g_av_args->ext_chn_number = 4;
+    }
 
     if (g_av_args->video.rotate)
     {
@@ -1924,6 +2115,8 @@ int sal_sys_init(sal_video_s* video)
             g_av_args->video_chn_num++;
         }
     }
+    
+    g_av_args->wdr_enable = 1;
     
     g_av_args->smartP_enable = video->smartP_enable;
     g_av_args->gop_times = 20;
@@ -1959,7 +2152,7 @@ int sal_sys_init(sal_video_s* video)
             sprintf(g_config.video[i].bitrate_ctrl, "%s", (g_av_args->video.stream[i].bitrate_ctl == SAL_BITRATE_CONTROL_VBR) ? "VBR" : "CBR");
         }
     }
-
+    g_av_args->online_enable = 0;
     g_av_args->lowdelay_enable = 0;
     g_av_args->onebuffer_enable = 0;
     g_av_args->onestream_enable = 0;

@@ -100,6 +100,18 @@ cp ./iptables/xtables-multi ../iptables -af
 ${COMPILE}-strip ../iptables
 cd ../
 
+#ethtool
+#ethtool -s eth0 speed 10 duplex full autoneg off //强制修改为10M,开启全双工，关闭自动协商
+rm -rf ethtool
+rm -rf ethtool-4.15
+tar -xzvf ethtool-4.15.tar.gz
+cd ./ethtool-4.15
+./configure --host=${COMPILE}
+make
+cp ./ethtool ../ethtool -af
+${COMPILE}-strip ../ethtool
+cd ../
+
 
 #${COMPILE}-strip --strip-debug --strip-unneeded *.a
 

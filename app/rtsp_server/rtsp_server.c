@@ -125,7 +125,7 @@ int main(int argc, char** argv)
     video.stream[0].bitrate = 2500;
     video.stream[0].gop = 2 * video.stream[0].framerate;
     video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
-    video.stream[0].encode_type = SAL_ENCODE_TYPE_H264;
+    video.stream[0].encode_type = SAL_ENCODE_TYPE_H265;
 
     video.stream[1].enable = 1;
     video.stream[1].width = 640;
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     video.stream[1].bitrate = 500;
     video.stream[1].gop = 2 * video.stream[1].framerate;
     video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
-    video.stream[1].encode_type = SAL_ENCODE_TYPE_H264;
+    video.stream[1].encode_type = SAL_ENCODE_TYPE_H265;
     ret = sal_sys_init(&video);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys video init done.\n");
@@ -155,8 +155,8 @@ int main(int argc, char** argv)
     DBG("sys audio init done.\n");*/
     
     
-    ret = sal_dr_init();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    //ret = sal_dr_init();
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     
    /* ret = sal_osd_init();
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);*/
