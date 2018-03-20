@@ -67,6 +67,7 @@ LIBS+=$(PLATFORM)/common_lib/libmd5.a
 LIBS+=$(PLATFORM)/common_lib/libtinyxml.a
 LIBS+=$(PLATFORM)/common_lib/libturbojpeg.a
 LIBS+=$(PLATFORM)/common_lib/libmp4v2.a
+LIBS+=$(PLATFORM)/common_lib/libihwdet.a
 export LIBS
 
 CFLAGS += -g -Wall

@@ -1009,13 +1009,13 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         DBG("client_Vport[1]: %d\n", _pstRtspServer->client_Vport[1]);
         
         _pstRtspServer->client_Vfd[0] = __Setup_udp(_pstRtspServer->client_Vport[0]);
-        CHECK(_pstRtspServer->client_Vfd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Vfd[0]);
+        CHECK(_pstRtspServer->client_Vfd[0] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->client_Vfd[0]);
         _pstRtspServer->client_Vfd[1] = __Setup_udp(_pstRtspServer->client_Vport[1]);
-        CHECK(_pstRtspServer->client_Vfd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Vfd[1]);
+        CHECK(_pstRtspServer->client_Vfd[1] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->client_Vfd[1]);
         _pstRtspServer->server_Vfd[0] = __Setup_udp(_pstRtspServer->server_Vport[0]);
-        CHECK(_pstRtspServer->server_Vfd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Vfd[0]);
+        CHECK(_pstRtspServer->server_Vfd[0] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->server_Vfd[0]);
         _pstRtspServer->server_Vfd[1] = __Setup_udp(_pstRtspServer->server_Vport[1]);
-        CHECK(_pstRtspServer->server_Vfd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Vfd[1]);
+        CHECK(_pstRtspServer->server_Vfd[1] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->server_Vfd[1]);
     }
     else if (1 == s32StreamId)
     {
@@ -1031,13 +1031,13 @@ static int __RecvSetup(char* _szRtspReq, RTSP_SERVER_S* _pstRtspServer)
         DBG("client_Aport[1]: %d\n", _pstRtspServer->client_Aport[1]);
 
         _pstRtspServer->client_Afd[0] = __Setup_udp(_pstRtspServer->client_Aport[0]);
-        CHECK(_pstRtspServer->client_Afd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Afd[0]);
+        CHECK(_pstRtspServer->client_Afd[0] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->client_Afd[0]);
         _pstRtspServer->client_Afd[1] = __Setup_udp(_pstRtspServer->client_Aport[1]);
-        CHECK(_pstRtspServer->client_Afd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->client_Afd[1]);
+        CHECK(_pstRtspServer->client_Afd[1] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->client_Afd[1]);
         _pstRtspServer->server_Afd[0] = __Setup_udp(_pstRtspServer->server_Aport[0]);
-        CHECK(_pstRtspServer->server_Afd[0] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Afd[0]);
+        CHECK(_pstRtspServer->server_Afd[0] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->server_Afd[0]);
         _pstRtspServer->server_Afd[1] = __Setup_udp(_pstRtspServer->server_Aport[1]);
-        CHECK(_pstRtspServer->server_Afd[1] > 0, -1, "fd is invalid[%s]\n", _pstRtspServer->server_Afd[1]);
+        CHECK(_pstRtspServer->server_Afd[1] > 0, -1, "fd is invalid[%d]\n", _pstRtspServer->server_Afd[1]);
     }
 
     char* szTemplate = NULL;
@@ -1552,10 +1552,18 @@ static int _RecvRtcpOverUdp(RTSP_SERVER_S* _pstRtspServer)
     FD_ZERO(&rset);
     int maxfd = 0;
 
-    FD_SET(_pstRtspServer->server_Vfd[1], &rset);
-    maxfd = (maxfd < _pstRtspServer->server_Vfd[1]) ? _pstRtspServer->server_Vfd[1] : maxfd;
-    FD_SET(_pstRtspServer->server_Afd[1], &rset);
-    maxfd = (maxfd < _pstRtspServer->server_Afd[1]) ? _pstRtspServer->server_Afd[1] : maxfd;
+    if (_pstRtspServer->server_Vfd[1] > 0)
+    {
+        //DBG("server_Vfd[1]: %d\n", _pstRtspServer->server_Vfd[1]);
+        FD_SET(_pstRtspServer->server_Vfd[1], &rset);
+        maxfd = (maxfd < _pstRtspServer->server_Vfd[1]) ? _pstRtspServer->server_Vfd[1] : maxfd;
+    }
+    if (_pstRtspServer->server_Afd[1] > 0)
+    {
+        //DBG("server_Afd[1]: %d\n", _pstRtspServer->server_Afd[1]);
+        FD_SET(_pstRtspServer->server_Afd[1], &rset);
+        maxfd = (maxfd < _pstRtspServer->server_Afd[1]) ? _pstRtspServer->server_Afd[1] : maxfd;
+    }
     //DBG("maxfd: %d\n", maxfd);
     
     struct timeval TimeoutVal = {0, 1};
@@ -1575,7 +1583,7 @@ static int _RecvRtcpOverUdp(RTSP_SERVER_S* _pstRtspServer)
     unsigned char buffer[2048];
     memset(buffer, 0, sizeof(buffer));
     socklen_t len = sizeof(Addr);
-    if (FD_ISSET(_pstRtspServer->server_Vfd[1], &rset))
+    if (_pstRtspServer->server_Vfd[1] > 0 && FD_ISSET(_pstRtspServer->server_Vfd[1], &rset))
     {
         ret = recvfrom(_pstRtspServer->server_Vfd[1], buffer, sizeof(buffer), 0, (struct sockaddr *)&Addr, &len); 
         if (ret < 0)
@@ -1591,7 +1599,8 @@ static int _RecvRtcpOverUdp(RTSP_SERVER_S* _pstRtspServer)
         //DBG("recv video rtcp from: %s:%d\n", inet_ntoa(Addr.sin_addr), ntohs(Addr.sin_port));
         //to do
     }
-    else if (FD_ISSET(_pstRtspServer->server_Afd[1], &rset))
+    
+    if (_pstRtspServer->server_Afd[1] > 0 && FD_ISSET(_pstRtspServer->server_Afd[1], &rset))
     {
         ret = recvfrom(_pstRtspServer->server_Afd[1], buffer, sizeof(buffer), 0, (struct sockaddr *)&Addr, &len); 
         if (ret < 0)
@@ -1763,7 +1772,7 @@ void* rtsp_process(void* _pstSession)
             else
             {
                 //WRN("Get AVframe failed\n");
-                usleep(20*1000);
+                //usleep(20*1000);
             }
 
             ret = select_rw(stRtspServer.hndSocket);

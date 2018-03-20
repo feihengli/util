@@ -57,7 +57,8 @@ char* util_time_string(void)
     static char time[32] = "";
     struct timeval tv = {0, 0};
     gettimeofday(&tv, NULL);
-    strftime(time, sizeof(time), "%F %H:%M:%S", localtime(&tv.tv_sec));
+    //strftime(time, sizeof(time), "%F %H:%M:%S", localtime(&tv.tv_sec));
+    strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
     sprintf(time, "%s.%06ld", time, tv.tv_usec);
 
     return time;
@@ -101,8 +102,8 @@ int util_file_write(const char* path, unsigned char* buf, int len)
     CHECK(buf, -1, "invalid parameter with: %#x\n", buf);
     CHECK(len > 0, -1, "invalid parameter with: %#x\n", len);
 
-    FILE* fp = fopen(path, "wb");
-    CHECK(fp, -1, "error with %#x: %s\n", fp, strerror(errno));
+    FILE* fp = fopen(path, "w+");
+    CHECK(fp, -1, "error with %#x: path[%s] %s\n", fp, path, strerror(errno));
 
     int written_len = 0;
     while (written_len != len)

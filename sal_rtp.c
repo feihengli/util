@@ -23,8 +23,11 @@ int rtp_amr_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
     _pRetRtpSplit->u32SegmentCount = 1;
     _pRetRtpSplit->u32BufSize = sizeof(RTSP_INTERLEAVED_FRAME) + RTP_AMR_HEADER_SIZE + _u32FrameSize;
     _pRetRtpSplit->pu8Buf = (unsigned char*)mem_malloc(_pRetRtpSplit->u32BufSize);
+    CHECK(_pRetRtpSplit->pu8Buf, -1, "error with %#x\n", _pRetRtpSplit->pu8Buf);
     _pRetRtpSplit->ppu8Segment = (unsigned char**)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned char**));
+    CHECK(_pRetRtpSplit->ppu8Segment, -1, "error with %#x\n", _pRetRtpSplit->ppu8Segment);
     _pRetRtpSplit->pU32SegmentSize = (unsigned int*)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned int*));
+    CHECK(_pRetRtpSplit->pU32SegmentSize, -1, "error with %#x\n", _pRetRtpSplit->pU32SegmentSize);
 
     RTSP_INTERLEAVED_FRAME stRtspInterleavedFrame;
     RTP_FIXED_HEADER stRtpFixedHeader;
@@ -82,9 +85,12 @@ int rtp_g711a_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
     _pRetRtpSplit->u32SegmentCount = 1;
     _pRetRtpSplit->u32BufSize = sizeof(RTSP_INTERLEAVED_FRAME) + RTP_G711_HEADER_SIZE + _u32FrameSize;
     _pRetRtpSplit->pu8Buf = (unsigned char*)mem_malloc(_pRetRtpSplit->u32BufSize);
+    CHECK(_pRetRtpSplit->pu8Buf, -1, "error with %#x\n", _pRetRtpSplit->pu8Buf);
     _pRetRtpSplit->ppu8Segment = (unsigned char**)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned char**));
+    CHECK(_pRetRtpSplit->ppu8Segment, -1, "error with %#x\n", _pRetRtpSplit->ppu8Segment);
     _pRetRtpSplit->pU32SegmentSize = (unsigned int*)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned int*));
-
+    CHECK(_pRetRtpSplit->pU32SegmentSize, -1, "error with %#x\n", _pRetRtpSplit->pU32SegmentSize);
+    
     RTSP_INTERLEAVED_FRAME stRtspInterleavedFrame;
     RTP_FIXED_HEADER stRtpFixedHeader;
 
@@ -166,8 +172,11 @@ int rtp_h264_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
         _pRetRtpSplit->u32SegmentCount = 1;
         _pRetRtpSplit->u32BufSize = sizeof(RTSP_INTERLEAVED_FRAME) + RTP_HEADER_SIZE + _u32FrameSize;
         _pRetRtpSplit->pu8Buf = (unsigned char*)mem_malloc(_pRetRtpSplit->u32BufSize);
+        CHECK(_pRetRtpSplit->pu8Buf, -1, "error with %#x\n", _pRetRtpSplit->pu8Buf);
         _pRetRtpSplit->ppu8Segment = (unsigned char**)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned char**));
+        CHECK(_pRetRtpSplit->ppu8Segment, -1, "error with %#x\n", _pRetRtpSplit->ppu8Segment);
         _pRetRtpSplit->pU32SegmentSize = (unsigned int*)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned int*));
+        CHECK(_pRetRtpSplit->pU32SegmentSize, -1, "error with %#x\n", _pRetRtpSplit->pU32SegmentSize);
     }
     else
     {
@@ -183,8 +192,11 @@ int rtp_h264_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
         _pRetRtpSplit->u32BufSize = (sizeof(RTSP_INTERLEAVED_FRAME) + RTP_HEADER_SIZE2 + UDP_MAX_SIZE) * (packetNum - 1)
                                     + (sizeof(RTSP_INTERLEAVED_FRAME) + RTP_HEADER_SIZE2 + lastPackSize);
         _pRetRtpSplit->pu8Buf = (unsigned char*)mem_malloc(_pRetRtpSplit->u32BufSize);
+        CHECK(_pRetRtpSplit->pu8Buf, -1, "error with %#x\n", _pRetRtpSplit->pu8Buf);
         _pRetRtpSplit->ppu8Segment = (unsigned char**)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned char**));
+        CHECK(_pRetRtpSplit->ppu8Segment, -1, "error with %#x\n", _pRetRtpSplit->ppu8Segment);
         _pRetRtpSplit->pU32SegmentSize = (unsigned int*)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned int*));
+        CHECK(_pRetRtpSplit->pU32SegmentSize, -1, "error with %#x\n", _pRetRtpSplit->pU32SegmentSize);
     }
 
     NALU_t stNalut;
@@ -391,8 +403,11 @@ int rtp_h265_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
         _pRetRtpSplit->u32SegmentCount = 1;
         _pRetRtpSplit->u32BufSize = sizeof(RTSP_INTERLEAVED_FRAME) + RTP_HEADER_SIZE_H265 + _u32FrameSize;
         _pRetRtpSplit->pu8Buf = (unsigned char*)mem_malloc(_pRetRtpSplit->u32BufSize);
+        CHECK(_pRetRtpSplit->pu8Buf, -1, "error with %#x\n", _pRetRtpSplit->pu8Buf);
         _pRetRtpSplit->ppu8Segment = (unsigned char**)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned char**));
+        CHECK(_pRetRtpSplit->ppu8Segment, -1, "error with %#x\n", _pRetRtpSplit->ppu8Segment);
         _pRetRtpSplit->pU32SegmentSize = (unsigned int*)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned int*));
+        CHECK(_pRetRtpSplit->pU32SegmentSize, -1, "error with %#x\n", _pRetRtpSplit->pU32SegmentSize);
     }
     else
     {
@@ -408,8 +423,11 @@ int rtp_h265_alloc(unsigned char* _pu8Frame, unsigned int _u32FrameSize,
         _pRetRtpSplit->u32BufSize = (sizeof(RTSP_INTERLEAVED_FRAME) + RTP_HEADER_SIZE2_H265 + UDP_MAX_SIZE) * (packetNum - 1)
             + (sizeof(RTSP_INTERLEAVED_FRAME) + RTP_HEADER_SIZE2_H265 + lastPackSize);
         _pRetRtpSplit->pu8Buf = (unsigned char*)mem_malloc(_pRetRtpSplit->u32BufSize);
+        CHECK(_pRetRtpSplit->pu8Buf, -1, "error with %#x\n", _pRetRtpSplit->pu8Buf);
         _pRetRtpSplit->ppu8Segment = (unsigned char**)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned char**));
+        CHECK(_pRetRtpSplit->ppu8Segment, -1, "error with %#x\n", _pRetRtpSplit->ppu8Segment);
         _pRetRtpSplit->pU32SegmentSize = (unsigned int*)mem_malloc(_pRetRtpSplit->u32SegmentCount * sizeof(unsigned int*));
+        CHECK(_pRetRtpSplit->pU32SegmentSize, -1, "error with %#x\n", _pRetRtpSplit->pU32SegmentSize);
     }
 
     NALU_t stNalut;

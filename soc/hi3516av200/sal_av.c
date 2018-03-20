@@ -299,7 +299,7 @@ static VI_DEV_ATTR_EX_S DEV_ATTR_DC_BASE_EX =
 };
 
 /*8M outout*/
-VI_DEV_ATTR_S gst_videv_attr =
+VI_DEV_ATTR_S DEV_ATTR_IMX274_MIPI_12BIT_4K =
 {
     /*接口模式*/
     VI_MODE_MIPI,
@@ -351,7 +351,7 @@ VI_DEV_ATTR_S gst_videv_attr =
 };
 
 /*8M outout*/
-VI_DEV_ATTR_S gst_videv_attr_wdr =
+VI_DEV_ATTR_S DEV_ATTR_IMX274_MIPI_12BIT_4K_WDR =
 {
     /*接口模式*/
     VI_MODE_MIPI,
@@ -465,7 +465,7 @@ static combo_dev_attr_t LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR =
         }
     };
 
-combo_dev_attr_t gst_combo_dev_attr = 
+combo_dev_attr_t  DEV_COMBO_IMX274_MIPI_12BIT_4K = 
 {
     .devno = 0,
     .input_mode = INPUT_MODE_MIPI,
@@ -480,7 +480,7 @@ combo_dev_attr_t gst_combo_dev_attr =
     }
 };
 
-combo_dev_attr_t gst_combo_dev_attr_wdr = 
+combo_dev_attr_t DEV_COMBO_IMX274_MIPI_12BIT_4K_WDR = 
 {
     .devno = 0,
     .input_mode = INPUT_MODE_MIPI,
@@ -592,6 +592,7 @@ static int sys_vb_init()
 
 static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
 {
+    int ret = -1;
     HI_S32 fd;
     combo_dev_attr_t stcomboDevAttr;
     memset(&stcomboDevAttr, 0, sizeof(stcomboDevAttr));
@@ -672,10 +673,10 @@ static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
     }
     else if (pstViConfig->enViMode == SONY_IMX274_MIPI_8M_30FPS)
     {
-        memcpy(&stcomboDevAttr, &gst_combo_dev_attr, sizeof(stcomboDevAttr));
+        memcpy(&stcomboDevAttr, &DEV_COMBO_IMX274_MIPI_12BIT_4K, sizeof(stcomboDevAttr));
         if (pstViConfig->enWDRMode != WDR_MODE_NONE)
         {
-            memcpy(&stcomboDevAttr, &gst_combo_dev_attr_wdr, sizeof(stcomboDevAttr));
+            memcpy(&stcomboDevAttr, &DEV_COMBO_IMX274_MIPI_12BIT_4K_WDR, sizeof(stcomboDevAttr));
         }
     }
     else
@@ -685,26 +686,26 @@ static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
     }
     
     /* 1.reset mipi */
-    ioctl(fd, HI_MIPI_RESET_MIPI, &stcomboDevAttr.devno);
+    ret = ioctl(fd, HI_MIPI_RESET_MIPI, &stcomboDevAttr.devno);
+    CHECK(ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", ret);
 
     /* 2.reset sensor */
-    ioctl(fd, HI_MIPI_RESET_SENSOR, &stcomboDevAttr.devno);
+    ret = ioctl(fd, HI_MIPI_RESET_SENSOR, &stcomboDevAttr.devno);
+    CHECK(ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", ret);
     
     /* 3.set mipi attr */
-    if (ioctl(fd, HI_MIPI_SET_DEV_ATTR, &stcomboDevAttr) < 0)
-    {
-        DBG("set mipi attr failed: %s\n", strerror(errno));
-        close(fd);
-        return HI_FAILURE;
-    }
+    ret = ioctl(fd, HI_MIPI_SET_DEV_ATTR, &stcomboDevAttr);
+    CHECK(ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", ret);
     
     usleep(10000);
     
     /* 4.unreset mipi */
-    ioctl(fd, HI_MIPI_UNRESET_MIPI, &stcomboDevAttr.devno);
+    ret = ioctl(fd, HI_MIPI_UNRESET_MIPI, &stcomboDevAttr.devno);
+    CHECK(ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", ret);
 
     /* 5.unreset sensor */
-    ioctl(fd, HI_MIPI_UNRESET_SENSOR, &stcomboDevAttr.devno);
+    ret = ioctl(fd, HI_MIPI_UNRESET_SENSOR, &stcomboDevAttr.devno);
+    CHECK(ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", ret);
 
     //if ((pstViConfig->enViMode == SONY_IMX117_LVDS_4K_30FPS) || (pstViConfig->enViMode == SONY_IMX117_LVDS_12M_28FPS))
     //{
@@ -729,11 +730,10 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_CONFIG_S* pstViConfig)
     HI_S32 s32IspDev = 0;
 
     VI_DEV_ATTR_S  stViDevAttr;
+    memset(&stViDevAttr,0,sizeof(stViDevAttr));
 
     HI_BOOL bATTR_EX = HI_FALSE;
     VI_DEV_ATTR_EX_S  stViDevAttrEx;
-
-    memset(&stViDevAttr,0,sizeof(stViDevAttr));
     memset(&stViDevAttrEx,0,sizeof(stViDevAttrEx));
 
     if (g_av_args->sensor_type == APTINA_AR0130_DC_720P_30FPS)
@@ -772,10 +772,10 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_CONFIG_S* pstViConfig)
     }
     else if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
     {
-        memcpy(&stViDevAttr, &gst_videv_attr, sizeof(stViDevAttr));
+        memcpy(&stViDevAttr, &DEV_ATTR_IMX274_MIPI_12BIT_4K, sizeof(stViDevAttr));
         if (pstViConfig->enWDRMode != WDR_MODE_NONE)
         {
-            memcpy(&stViDevAttr, &gst_videv_attr_wdr, sizeof(stViDevAttr));
+            memcpy(&stViDevAttr, &DEV_ATTR_IMX274_MIPI_12BIT_4K_WDR, sizeof(stViDevAttr));
         }
     }
     else
@@ -824,6 +824,7 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_CONFIG_S* pstViConfig)
         if (stWdrMode.enWDRMode)  //wdr mode
         {
             VI_WDR_ATTR_S stWdrAttr;
+            memset(&stWdrAttr, 0, sizeof(stWdrAttr));
 
             stWdrAttr.enWDRMode = stWdrMode.enWDRMode;
             stWdrAttr.bCompress = HI_FALSE;
@@ -841,8 +842,9 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_CONFIG_S* pstViConfig)
 
 static int vi_set_chn(VI_CHN ViChn, RECT_S *pstCapRect, SIZE_S *pstTarSize)
 {
-    HI_S32 s32Ret;
+    HI_S32 s32Ret = 0;
     VI_CHN_ATTR_S stChnAttr;
+    memset(&stChnAttr, 0, sizeof(stChnAttr));
     ROTATE_E enRotate = ROTATE_NONE;
 
     /* step  5: config & start vicap dev */
@@ -947,10 +949,12 @@ static int isp_init(WDR_MODE_E  enWDRMode)
     strcpy(stAwbLib.acLibName, HI_AWB_LIB_NAME);
     
     ISP_SNS_OBJ_S* pstSnsObj = NULL;
-    
-    //extern ISP_SNS_OBJ_S stSnsImx226Obj;
-    //pstSnsObj = &stSnsImx226Obj;
-    
+
+    if (g_av_args->sensor_type == SONY_IMX226_LVDS_12M_30FPS)
+    {
+        //extern ISP_SNS_OBJ_S stSnsImx226Obj;
+        //pstSnsObj = &stSnsImx226Obj;
+    }
     if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
     {
         extern ISP_SNS_OBJ_S stSnsImx274Obj;
@@ -1233,6 +1237,7 @@ static int vpss_bind_vi()
 
         VpssGrp ++;
     }
+    
     return HI_SUCCESS;
 }
 
@@ -1255,9 +1260,8 @@ static int vpss_start()
     stVpssGrpAttr.bDciEn = HI_FALSE;
     stVpssGrpAttr.enDieMode = VPSS_DIE_MODE_NODIE;
     stVpssGrpAttr.enPixFmt = g_av_args->pixel_fmt;
-    
     stVpssGrpAttr.bStitchBlendEn = HI_FALSE;
-    DBG("\n");
+
     s32Ret = vpss_set_group(VpssGrp, &stVpssGrpAttr);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
@@ -1502,6 +1506,10 @@ static int venc_set_h264(VENC_CHN VencChn, HI_U32  u32Profile)
         stH264Vbr.u32MaxBitRate = stream->bitrate;
         memcpy(&stVencChnAttr.stRcAttr.stAttrH264Vbr, &stH264Vbr, sizeof(VENC_ATTR_H264_VBR_S));
     }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
+    }
     
     DBG("VencChn: %d\n", VencChn);
     s32Ret = HI_MPI_VENC_CreateChn(VencChn, &stVencChnAttr);
@@ -1561,6 +1569,10 @@ static int venc_set_h265(VENC_CHN VencChn, HI_U32  u32Profile)
         stH265Vbr.u32MaxQp = 51;
         stH265Vbr.u32MaxBitRate = stream->bitrate;
         memcpy(&stVencChnAttr.stRcAttr.stAttrH265Vbr, &stH265Vbr, sizeof(VENC_ATTR_H265_VBR_S));
+    }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
     }
 
     if (0 == VencChn && g_av_args->smartP_enable)
@@ -1639,10 +1651,14 @@ static int venc_set_cfg(VENC_CHN VencChn)
         s32Ret = venc_enable_vui(VencChn);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
-    else
+    else if (SAL_ENCODE_TYPE_H265 == stream->encode_type)
     {
         s32Ret = venc_set_h265(VencChn, u32Profile);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
     }
 
     if (0 == VencChn && g_av_args->lowdelay_enable)
@@ -1785,6 +1801,10 @@ static int venc_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* 
     {
         isKey = (pstStream->pstPack->DataType.enH265EType == H265E_NALU_IDRSLICE) ? 1 : 0;
     }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
+    }
 
     s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey, stream->encode_type);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
@@ -1825,6 +1845,10 @@ static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STA
         else if (SAL_ENCODE_TYPE_H265 == stream->encode_type)
         {
             isKey |= (pstStream->pstPack[j].DataType.enH265EType == H265E_NALU_IDRSLICE) ? 1 : 0;
+        }
+        else
+        {
+            CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
         }
         
         memcpy(buffer+buffer_offset, frame_addr, frame_len);
@@ -2129,7 +2153,6 @@ int sal_sys_init(sal_video_s* video)
 
     CHECK(g_av_args->video_chn_num > 0, HI_FAILURE, "error: video chn num is %d\n", g_av_args->video_chn_num);
 
-
     {
         // LBR功能
         for (i = 0; i < g_av_args->video_chn_num; i++)
@@ -2378,6 +2401,10 @@ int sal_video_framerate_set(int stream, int framerate)
         s32Ret = venc_set_h265base_args(stream);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
 
@@ -2390,7 +2417,6 @@ int sal_video_resolution_set(int stream, int framerate)
     CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
 
     int s32Ret = -1;
-
 
     pthread_mutex_lock(&g_av_args->mutex);
     
@@ -2406,6 +2432,10 @@ int sal_video_resolution_set(int stream, int framerate)
     {
         s32Ret = venc_set_h265base_args(stream);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
     }
 
     pthread_mutex_unlock(&g_av_args->mutex);
@@ -2454,6 +2484,10 @@ int sal_video_bitrate_set(int stream, SAL_BITRATE_CONTROL_E bitrate_ctl, int bit
         s32Ret = venc_set_h265base_args(stream);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
     return 0;
@@ -2480,6 +2514,10 @@ int sal_video_lbr_set(int stream, SAL_BITRATE_CONTROL_E bitrate_ctl, int bitrate
         s32Ret = venc_set_h265base_args(stream);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
+    }
 
     pthread_mutex_unlock(&g_av_args->mutex);
     return 0;
@@ -2503,6 +2541,10 @@ int sal_video_gop_set(int stream, int gop)
     {
         s32Ret = venc_set_h265base_args(stream);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
     }
 
     pthread_mutex_unlock(&g_av_args->mutex);
@@ -2666,6 +2708,10 @@ int sal_video_cbr_qp_set(int channel, sal_video_qp_s* qp_args)
         stRcParam.stParamH265Cbr.u32MinQp = qp_args->min_qp;
         stRcParam.stParamH265Cbr.u32MaxQp = qp_args->max_qp;
     }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
+    }
 
     s32Ret = HI_MPI_VENC_SetRcParam(channel, &stRcParam);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
@@ -2703,6 +2749,10 @@ int sal_video_cbr_qp_get(int channel, sal_video_qp_s* qp_args)
         qp_args->max_i_qp = stRcParam.stParamH265Cbr.u32MaxIQp;
         qp_args->min_qp = stRcParam.stParamH265Cbr.u32MinQp;
         qp_args->max_qp = stRcParam.stParamH265Cbr.u32MaxQp;
+    }
+    else
+    {
+        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
     }
 
     return s32Ret;

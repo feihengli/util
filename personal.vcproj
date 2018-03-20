@@ -187,11 +187,15 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\libjpeg-turbo\cderror.h"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\libjpeg\cderror.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\cderror.h"
+			RelativePath=".\common_include\libjpeg\cdjpeg.h"
 			>
 		</File>
 		<File
@@ -199,7 +203,7 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\cdjpeg.h"
+			RelativePath=".\common_include\t01\channel.h"
 			>
 		</File>
 		<File
@@ -227,6 +231,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\t01\debug.h"
+			>
+		</File>
+		<File
 			RelativePath=".\app\debugc\debugc.c"
 			>
 		</File>
@@ -236,6 +244,18 @@
 		</File>
 		<File
 			RelativePath=".\common_include\libcurl\easy.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\error.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\event.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\ext.h"
 			>
 		</File>
 		<File
@@ -267,6 +287,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\ftp_client.c"
+			>
+		</File>
+		<File
+			RelativePath=".\ftp_client.h"
+			>
+		</File>
+		<File
 			RelativePath=".\common_include\mp4v2\general.h"
 			>
 		</File>
@@ -288,6 +316,26 @@
 		</File>
 		<File
 			RelativePath=".\app\httpc_test\httpc.c"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\ihwdet.h"
+			>
+		</File>
+		<File
+			RelativePath=".\soc\hi3516av200\sensor\sony_imx274_mipi\imx274_cmos.c"
+			>
+		</File>
+		<File
+			RelativePath=".\soc\hi3516av200\sensor\sony_imx274_mipi\imx274_sensor_ctl.c"
+			>
+		</File>
+		<File
+			RelativePath=".\soc\hi3516av200\sensor\sony_imx274_mipi\imx274_slave_priv.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\ioattr.h"
 			>
 		</File>
 		<File
@@ -335,11 +383,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jdct.h"
+			RelativePath=".\common_include\libjpeg-turbo\jdct.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jdct.h"
+			RelativePath=".\common_include\libjpeg\jdct.h"
 			>
 		</File>
 		<File
@@ -359,11 +407,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jerror.h"
+			RelativePath=".\common_include\libjpeg\jerror.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jerror.h"
+			RelativePath=".\common_include\libjpeg-turbo\jerror.h"
 			>
 		</File>
 		<File
@@ -375,19 +423,19 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jmemsys.h"
-			>
-		</File>
-		<File
 			RelativePath=".\common_include\libjpeg\jmemsys.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jmorecfg.h"
+			RelativePath=".\common_include\libjpeg-turbo\jmemsys.h"
 			>
 		</File>
 		<File
 			RelativePath=".\common_include\libjpeg-turbo\jmorecfg.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\libjpeg\jmorecfg.h"
 			>
 		</File>
 		<File
@@ -407,11 +455,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jpeglib.h"
+			RelativePath=".\common_include\libjpeg\jpeglib.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jpeglib.h"
+			RelativePath=".\common_include\libjpeg-turbo\jpeglib.h"
 			>
 		</File>
 		<File
@@ -423,11 +471,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\jversion.h"
+			RelativePath=".\common_include\libjpeg\jversion.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\jversion.h"
+			RelativePath=".\common_include\libjpeg-turbo\jversion.h"
 			>
 		</File>
 		<File
@@ -472,6 +520,10 @@
 		</File>
 		<File
 			RelativePath=".\app\ntpc\ntpc.c"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\object.h"
 			>
 		</File>
 		<File
@@ -679,6 +731,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\common_include\t01\target.h"
+			>
+		</File>
+		<File
 			RelativePath=".\release\test_encode\test_encode.c"
 			>
 			<FileConfiguration
@@ -725,11 +781,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg\transupp.h"
+			RelativePath=".\common_include\libjpeg-turbo\transupp.h"
 			>
 		</File>
 		<File
-			RelativePath=".\common_include\libjpeg-turbo\transupp.h"
+			RelativePath=".\common_include\libjpeg\transupp.h"
 			>
 		</File>
 		<File
@@ -738,6 +794,10 @@
 		</File>
 		<File
 			RelativePath=".\common_include\libcurl\typecheck-gcc.h"
+			>
+		</File>
+		<File
+			RelativePath=".\common_include\t01\typedef.h"
 			>
 		</File>
 		<File

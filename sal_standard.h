@@ -43,6 +43,14 @@ extern "C"{
 
 typedef void* handle;
 
+////用于单独抠出某个模块编译
+//#define CHECK 
+//#define mem_malloc malloc
+//#define mem_free free
+//#define DBG printf
+//#define ERR DBG
+//#define WRN DBG
+
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -23,6 +23,10 @@ int sal_assist()
 {
 	sal_jpeg_init(NULL);
     sal_dr_init();
+    extern __main();
+    __main();
+    extern int vo_init();
+    vo_init();
 	
 	return 0;
 }

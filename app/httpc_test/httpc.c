@@ -117,7 +117,7 @@ int main(int argc, char** argv)
             CHECK(ret == 0, -1, "Error with: %#x\n", ret);
 
             DBG("Progress: %d\n", progress);
-            if (progress == 100)
+            if (progress == 100 && status == HTTP_STATUS_FINISH_OK)
             {
                 break;
             }

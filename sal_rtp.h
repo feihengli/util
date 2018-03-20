@@ -233,18 +233,6 @@ typedef struct RTP_SPLIT_S
     unsigned int* pU32SegmentSize;//每一个RTP包的大小
 } RTP_SPLIT_S;
 
-typedef struct RTP_KEY_S
-{
-    int sps_offset;
-    int sps_len;
-    int pps_offset;
-    int pps_len;
-    int sei_offset;
-    int sei_len;
-    int idr_offset;
-    int idr_len;
-} RTP_KEY_S;
-
 /*
  函 数 名: rtp_amr_alloc
  功能描述: RTP封装AMR的音频帧 每个RTP包都包含RTP OVER TCP的交错帧头

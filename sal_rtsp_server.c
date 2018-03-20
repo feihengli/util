@@ -8,7 +8,6 @@
 typedef struct rtsps_s
 {
     int ListenFd;// 用于监听
-    int Status; // connect status
     handle hndClientList; // 存放已连接上的客户端
     int running;
     pthread_t pid;
@@ -140,7 +139,6 @@ static int rtsps_setup_tcp(int port)
     CHECK(ret == 0, -1, "error with %#x: %s\n", ret, strerror(errno));
 
     return ListenFd;
-
 }
 
 handle rtsps_init(int port)

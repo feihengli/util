@@ -555,7 +555,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sal_t01.h"
+				>
+			</File>
+			<File
 				RelativePath=".\sal_vgs.h"
+				>
+			</File>
+			<File
+				RelativePath=".\sal_vo.h"
 				>
 			</File>
 			<File
@@ -715,7 +723,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sal_t01.c"
+				>
+			</File>
+			<File
 				RelativePath=".\sal_vgs.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sal_vo.c"
 				>
 			</File>
 			<File
@@ -727,6 +743,10 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\Makefile"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
