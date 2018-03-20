@@ -164,7 +164,33 @@ int main(int argc, char** argv)
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
     
+    //handle hndFtpc = ftp_client_init("192.168.0.32", 21, "root", "123456");
+    //CHECK(hndFtpc, -1, "Error with: %#x\n", hndFtpc);
+    
+    //ret = ftp_client_startGet(hndFtpc, "live555MediaServer", 10000);
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    //ret = util_file_size("live555MediaServer");
+    //CHECK(ret > 0, -1, "Error with: %#x\n", ret);
+    //
+    //int len = ret;
+    //unsigned char* buffer = malloc(len);
+    //CHECK(buffer, -1, "Error with: %#x\n", buffer);
+    //
+    //ret = util_file_read("live555MediaServer", buffer, len);
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    //
+    //ret = ftp_client_startPut(hndFtpc, buffer, len, "live555MediaServer", 10000);
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    
     //bmp_demo();
+    
+    extern __main();
+    __main();
+    
+    extern int vo_init();
+    vo_init();
     
     while (!test_exit)
     {
