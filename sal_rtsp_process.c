@@ -1669,6 +1669,7 @@ void* rtsp_process(void* _pstSession)
     
     stRtspServer.bVSupport = 1;
     stRtspServer.bASupport = 1;
+    CHECK(stRtspServer.bVSupport || stRtspServer.bASupport, NULL, "Error with: %#x %#x\n", stRtspServer.bVSupport, stRtspServer.bASupport);
     
     char* data = NULL;
     int len = 0;

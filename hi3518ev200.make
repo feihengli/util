@@ -66,7 +66,8 @@ LIBS+=$(PLATFORM)/common_lib/libtinyxml.a
 #LIBS+=$(PLATFORM)/common_lib/libturbojpeg.a
 export LIBS
 
-CFLAGS += -g -Wall
+CFLAGS += -g -Wall -fPIC
+CFLAGS += -mcpu=arm926ej-s  -mno-unaligned-access -fno-aggressive-loop-optimizations
 CFLAGS += -DSENSOR_TYPE=$(SENSOR_TYPE)
 CFLAGS += -D$(HIARCH)
 CFLAGS += -I$(TOP_DIR)
