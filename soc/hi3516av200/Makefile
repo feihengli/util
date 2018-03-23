@@ -13,15 +13,17 @@ all:$(TARGETS) sensor_lib
 
 $(TARGETS):$(OBJS)
 	$(AR) rcs $@ $^
+	@echo
 sensor_lib:
 	make -C $(SENSOR_PATH)
+	@echo
 
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
-
+	@echo
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
-	
+	@echo
 %.d:%.c
 	@set -e; rm -f $@; $(CC) -MM $< $(CFLAGS) > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
