@@ -23,7 +23,7 @@ handle list_init(int _s32NodeDataSize);
  功能描述: 去初始化一个双向链表，需与list_init配对使用
  输入参数:  _hndList 链表句柄
  输出参数: 无
- 返 回 值: 成功返回链表handle,失败返回NULL
+ 返 回 值: 成功返回0,失败返回小于0
 */
 int list_destroy(handle _hndList);
 

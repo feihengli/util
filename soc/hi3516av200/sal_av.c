@@ -2140,7 +2140,7 @@ int sal_sys_init(sal_video_s* video)
         }
     }
     
-    g_av_args->wdr_enable = 1;
+    g_av_args->wdr_enable = video->wdr_enable;
     
     g_av_args->smartP_enable = video->smartP_enable;
     g_av_args->gop_times = 20;

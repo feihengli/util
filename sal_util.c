@@ -19,14 +19,14 @@ static int util_time_clock(clockid_t clk_id, struct timeval* pTime)
 
 int util_time_abs(struct timeval* pTime)
 {
-    CHECK(NULL != pTime, -1, "invalid parameter.\n");
+    CHECK(NULL != pTime, -1, "invalid parameter with: %#x\n", pTime);
 
     return util_time_clock(CLOCK_MONOTONIC, pTime);
 }
 
 int util_time_local(struct timeval* pTime)
 {
-    CHECK(NULL != pTime, -1, "invalid parameter.\n");
+    CHECK(NULL != pTime, -1, "invalid parameter with: %#x\n", pTime);
 
     return util_time_clock(CLOCK_REALTIME, pTime);
 }
@@ -34,7 +34,8 @@ int util_time_local(struct timeval* pTime)
 //单位毫秒
 int util_time_sub(struct timeval* pStart, struct timeval* pEnd)
 {
-    CHECK(NULL != pStart, -1, "invalid parameter.\n");
+    CHECK(NULL != pStart, -1, "invalid parameter with: %#x\n", pStart);
+    CHECK(NULL != pEnd, -1, "invalid parameter with: %#x\n", pEnd);
 
     int IntervalTime = (pEnd->tv_sec -pStart->tv_sec)*1000 + (pEnd->tv_usec - pStart->tv_usec)/1000;
 
@@ -44,7 +45,7 @@ int util_time_sub(struct timeval* pStart, struct timeval* pEnd)
 //单位毫秒
 int util_time_pass(struct timeval* previous)
 {
-    CHECK(NULL != previous, -1, "invalid parameter.\n");
+    CHECK(NULL != previous, -1, "invalid parameter with: %#x\n", previous);
 
     struct timeval cur = {0, 0};
     util_time_abs(&cur);
@@ -75,7 +76,7 @@ int util_file_size(char* path)
     return stStat.st_size;
 }
 
-//读取指定大小
+//读取文件
 int util_file_read(const char* path, unsigned char* buf, int len)
 {
     CHECK(path, -1, "invalid parameter with: %#x\n", path);
@@ -84,15 +85,16 @@ int util_file_read(const char* path, unsigned char* buf, int len)
     CHECK(fp, -1, "error with %#x: %s\n", fp, strerror(errno));
 
     int read_len = 0;
-    while (read_len != len && !feof(fp))
+    while (read_len < len && !feof(fp))
     {
         int tmp = fread(buf + read_len, 1, len-read_len, fp);
         CHECK(tmp >= 0, -1, "error with %#x: %s\n", tmp, strerror(errno));
         read_len += tmp;
     }
-
+    //buffer过小导致读取到的内容不是整个文件的内容
+    CHECK(feof(fp), -1, "buffer is too small with: %d\n", len);
     fclose(fp);
-    return 0;
+    return read_len;
 }
 
 //写指定大小
@@ -114,6 +116,7 @@ int util_file_write(const char* path, unsigned char* buf, int len)
     }
 
     fclose(fp);
+    sync();
     return 0;
 }
 

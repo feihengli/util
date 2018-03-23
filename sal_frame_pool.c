@@ -52,7 +52,7 @@ handle frame_pool_init(int capacity)
 
 int frame_pool_destroy(handle hndFramePool)
 {
-    CHECK(NULL != hndFramePool, -1, "invalid parameter.\n");
+    CHECK(NULL != hndFramePool, -1, "invalid parameter with: %#x\n", hndFramePool);
 
     int ret = -1;
     frame_pool_s* pstFramePool = (frame_pool_s*)(hndFramePool);
@@ -78,7 +78,7 @@ int frame_pool_destroy(handle hndFramePool)
 
 int frame_pool_add(handle hndFramePool, char *frame, unsigned long len, FRAME_TYPE_E type, int key, double pts)
 {
-    CHECK(NULL != hndFramePool, -1, "invalid parameter.\n");
+    CHECK(NULL != hndFramePool, -1, "invalid parameter with: %#x\n", hndFramePool);
 
     int ret = -1;
     frame_pool_s* pstFramePool = (frame_pool_s*)(hndFramePool);
@@ -190,6 +190,9 @@ static frame_info_s* frame_pool_akey_find(handle hndlist, int head)
 
 int frame_pool_split_vframe(unsigned char* _pu8Frame, int _u32FrameSize)
 {
+    CHECK(NULL != _pu8Frame, NULL, "invalid parameter with: %#x\n", _pu8Frame);
+    CHECK(_u32FrameSize >= 4, NULL, "invalid parameter with: %#x\n", _u32FrameSize);
+    
     int i = 0;
     for(i = 4; i < _u32FrameSize - 4; i++)
     {
@@ -203,7 +206,7 @@ int frame_pool_split_vframe(unsigned char* _pu8Frame, int _u32FrameSize)
 
 handle frame_pool_register(handle hndFramePool, int head)
 {
-    CHECK(NULL != hndFramePool, NULL, "invalid parameter.\n");
+    CHECK(NULL != hndFramePool, NULL, "invalid parameter with: %#x\n", hndFramePool);
 
     int ret = -1;
     frame_pool_s* pstFramePool = (frame_pool_s*)(hndFramePool);
@@ -305,7 +308,7 @@ handle frame_pool_register(handle hndFramePool, int head)
 
 int frame_pool_unregister(handle hndReader)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);
@@ -322,7 +325,7 @@ int frame_pool_unregister(handle hndReader)
 */
 frame_info_s* frame_pool_get(handle hndReader)
 {
-    CHECK(NULL != hndReader, NULL, "invalid parameter.\n");
+    CHECK(NULL != hndReader, NULL, "invalid parameter with: %#x\n", hndReader);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);
@@ -347,7 +350,7 @@ frame_info_s* frame_pool_get(handle hndReader)
 
 int frame_pool_release(handle hndReader, frame_info_s* pstFrameInfo)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
     CHECK(NULL != pstFrameInfo, -1, "invalid parameter.\n");
 
     //int ret = -1;
@@ -368,7 +371,7 @@ int frame_pool_release(handle hndReader, frame_info_s* pstFrameInfo)
 
 int frame_pool_sps_get(handle hndReader, unsigned char** out, int* len)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);
@@ -388,7 +391,7 @@ int frame_pool_sps_get(handle hndReader, unsigned char** out, int* len)
 
 int frame_pool_pps_get(handle hndReader, unsigned char** out, int* len)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);
@@ -408,7 +411,7 @@ int frame_pool_pps_get(handle hndReader, unsigned char** out, int* len)
 
 int frame_pool_vps_get(handle hndReader, unsigned char** out, int* len)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);
@@ -428,8 +431,8 @@ int frame_pool_vps_get(handle hndReader, unsigned char** out, int* len)
 
 int frame_pool_vframe_type_get(handle hndReader, FRAME_TYPE_E* out)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
-    CHECK(NULL != out, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
+    CHECK(NULL != out, -1, "invalid parameter with: %#x\n", out);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);
@@ -445,8 +448,8 @@ int frame_pool_vframe_type_get(handle hndReader, FRAME_TYPE_E* out)
 
 int frame_pool_aframe_type_get(handle hndReader, FRAME_TYPE_E* out)
 {
-    CHECK(NULL != hndReader, -1, "invalid parameter.\n");
-    CHECK(NULL != out, -1, "invalid parameter.\n");
+    CHECK(NULL != hndReader, -1, "invalid parameter with: %#x\n", hndReader);
+    CHECK(NULL != out, -1, "invalid parameter with: %#x\n", out);
 
     //int ret = -1;
     reader_s* pstReader = (reader_s*)(hndReader);

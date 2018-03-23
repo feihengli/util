@@ -21,7 +21,8 @@ char* debug_time_str()
     static char time[32] = "";
     struct timeval tv = {0, 0};
     gettimeofday(&tv, NULL);
-    strftime(time, sizeof(time), "%F %H:%M:%S", localtime(&tv.tv_sec));
+    //strftime(time, sizeof(time), "%F %H:%M:%S", localtime(&tv.tv_sec));
+    strftime(time, sizeof(time), "%Y/%m/%d %H:%M:%S", localtime(&tv.tv_sec));
     sprintf(time, "%s.%06ld", time, tv.tv_usec);
     errno = __errno_bak;
     return time;

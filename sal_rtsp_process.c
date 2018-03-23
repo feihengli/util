@@ -86,13 +86,13 @@ typedef struct RTSP_SERVER_S
     //send over udp
     char szClientIP[16];
     int client_Vfd[2];
-    int client_Vport[2]; //rtp rtcp
+    int client_Vport[2]; //send rtp rtcp
     int server_Vfd[2];
-    int server_Vport[2]; //rtp rtcp
+    int server_Vport[2]; //recv rtp rtcp
     int client_Afd[2];
-    int client_Aport[2]; //rtp rtcp
+    int client_Aport[2]; //send rtp rtcp
     int server_Afd[2];
-    int server_Aport[2]; //rtp rtcp
+    int server_Aport[2]; //recv rtp rtcp
 }
 RTSP_SERVER_S;
 
@@ -1360,7 +1360,7 @@ static int _SendAFrameG711A(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServe
     u32DataLen = pstRetARtpSplit->u32BufSize;
     pData = pstRetARtpSplit->pu8Buf;
     //DBG("rtp : u32DataLen: %u\n", u32DataLen);
-    
+    //DBG("rtp : u32SegmentCount: %u\n", pstRetARtpSplit->u32SegmentCount);
     if (_pstRtspServer->enTranType == TRANS_TYPE_TCP)
     {
         ret = select_send(_pstRtspServer->hndSocket, pData, u32DataLen);
@@ -1371,13 +1371,13 @@ static int _SendAFrameG711A(frame_info_s* _pstInfo, RTSP_SERVER_S* _pstRtspServe
         struct sockaddr_in Addr;
         memset((char *)&Addr, 0, sizeof(struct sockaddr_in));
         Addr.sin_family = AF_INET;
-        Addr.sin_port = htons(_pstRtspServer->client_Vport[0]);
+        Addr.sin_port = htons(_pstRtspServer->client_Aport[0]);
         Addr.sin_addr.s_addr = inet_addr(_pstRtspServer->szClientIP);
-        //DBG("udp addr: %s:%d\n", _pstRtspServer->szClientIP, _pstRtspServer->client_Vport[0]);
+        //DBG("udp addr: %s:%d\n", _pstRtspServer->szClientIP, _pstRtspServer->client_Aport[0]);
         int i = 0;
         for (i = 0; i < pstRetARtpSplit->u32SegmentCount; i++)
         {
-            ret = sendto(_pstRtspServer->client_Vfd[0], pstRetARtpSplit->ppu8Segment[i]+RTSP_INTERLEAVED_FRAME_SIZE, pstRetARtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE, 0, (struct sockaddr *)&Addr, sizeof(Addr));
+            ret = sendto(_pstRtspServer->client_Afd[0], pstRetARtpSplit->ppu8Segment[i]+RTSP_INTERLEAVED_FRAME_SIZE, pstRetARtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE, 0, (struct sockaddr *)&Addr, sizeof(Addr));
             CHECK((ret == pstRetARtpSplit->pU32SegmentSize[i]-RTSP_INTERLEAVED_FRAME_SIZE) || (ret == -1 && errno == EAGAIN), -1, "Error with %s\n", ret);
             //DBG("sendto ok. size: %d\n", pstRetVRtpSplit->pU32SegmentSize[i]-4);
         }
@@ -1668,7 +1668,7 @@ void* rtsp_process(void* _pstSession)
     stRtspServer.server_Aport[1] = base_port++;
     
     stRtspServer.bVSupport = 1;
-    stRtspServer.bASupport = 0;
+    stRtspServer.bASupport = 1;
     
     char* data = NULL;
     int len = 0;

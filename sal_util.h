@@ -57,15 +57,23 @@ int util_file_size(char* path);
 
 /*
  函 数 名: util_file_read
- 功能描述: 在文件中读取指定大小的内容
+ 功能描述: 读取文件中的内容
  输入参数: path 文件路径
             len 缓存的最大长度
  输出参数: buf 输出缓存
- 返 回 值: 成功返回0,失败返回小于0
+ 返 回 值: 成功返回已读取大小,失败返回小于0
 */
 int util_file_read(const char* path, unsigned char* buf, int len);
 
-
+/*
+ 函 数 名: util_file_write
+ 功能描述: 把一段内存写到文件中
+ 输入参数: path 文件路径
+            buf buffer内存
+            len 缓存的最大长度
+ 输出参数: 无
+ 返 回 值: 成功返回0,失败返回小于0
+*/
 int util_file_write(const char* path, unsigned char* buf, int len);
 
 #ifdef __cplusplus

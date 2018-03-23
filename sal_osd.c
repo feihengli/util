@@ -535,7 +535,7 @@ static int osd_load_cfg(char* path, int i, int j)
         memset(buffer, 0, size);
 
         ret = util_file_read(path, (unsigned char*)buffer, size);
-        CHECK(ret == 0, -1, "Error with %#x.\n", ret);
+        CHECK(ret == size, -1, "Error with %#x.\n", ret);
 
         const char* cmd[] = {"type:", "location:", "content:"};
         char* find = strstr(buffer, cmd[k]);

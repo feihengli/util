@@ -64,6 +64,7 @@ typedef struct sal_video_s
     int rotate; // 0-->none, 1-->90 degree rotation
     int scale_enable;
     int smartP_enable;
+    int wdr_enable;
 }sal_video_s;
 
 

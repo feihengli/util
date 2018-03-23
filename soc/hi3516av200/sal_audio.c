@@ -839,7 +839,9 @@ int sal_audio_init(sal_audio_s *audio)
     pthread_mutex_init(&g_audio_args->mutex, NULL);
     memcpy(&g_audio_args->audio, audio, sizeof(*audio));
 
-    audio_vqe_config_load();
+    s32Ret = audio_vqe_config_load();
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
     g_audio_args->input_vol = 26;
     g_audio_args->mic_vol = 4;
     g_audio_args->output_vol = 0; // [-121,6]
@@ -874,15 +876,22 @@ int sal_audio_init(sal_audio_s *audio)
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
 
-    acodec_set_input_vol(g_audio_args->input_vol);
-    acodec_set_mic_gain(g_audio_args->mic_vol);
-    acodec_set_output_vol(g_audio_args->output_vol);
-    sal_audio_capture_volume_set(g_audio_args->audio.volume);
-
-    g_audio_args->last_aw8733a_stat = 0;
-    s32Ret = audio_aw8733a(g_audio_args->last_aw8733a_stat);
+    s32Ret = acodec_set_input_vol(g_audio_args->input_vol);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    util_time_abs(&g_audio_args->last_aw8733a_time);
+    
+    s32Ret = acodec_set_mic_gain(g_audio_args->mic_vol);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    s32Ret = acodec_set_output_vol(g_audio_args->output_vol);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    s32Ret = sal_audio_capture_volume_set(g_audio_args->audio.volume);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    //g_audio_args->last_aw8733a_stat = 0;
+    //s32Ret = audio_aw8733a(g_audio_args->last_aw8733a_stat);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //util_time_abs(&g_audio_args->last_aw8733a_time);
 
     return HI_SUCCESS;
 }

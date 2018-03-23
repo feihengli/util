@@ -11,7 +11,6 @@
 #include "sal_av.h"
 #include "sal_audio.h"
 #include "sal_debug.h"
-//#include "sal_special.h"
 #include "sal_util.h"
 
 static int test_exit = 0;

@@ -24,7 +24,7 @@ sal_config_s g_config =
 
 int sal_config_default(sal_config_s* config)
 {
-    CHECK(config, -1, "invalid parameter\n");
+    CHECK(config, -1, "invalid parameter with: %#x\n", config);
 
     strcpy(config->version, "1.0.0");
     unsigned int i = 0;
@@ -54,7 +54,7 @@ int sal_config_default(sal_config_s* config)
 
 int sal_config_save(char* path, sal_config_s* config)
 {
-    CHECK(path && config, -1, "invalid parameter\n");
+    CHECK(path && config, -1, "invalid parameter with: %#x %#x\n", path, config);
 
     unsigned int i = 0;
     handle_node node = NULL;
@@ -161,7 +161,7 @@ static int sal_config_vattr_parse(handle_attr* attr, sal_config_video_s* cfg)
 
 int sal_config_parse(char* path, sal_config_s* config)
 {
-    CHECK(path && config, -1, "invalid parameter\n");
+    CHECK(path && config, -1, "invalid parameter with: %#x %#x\n", path, config);
 
     handle_node node = NULL;
 

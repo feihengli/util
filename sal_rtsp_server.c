@@ -143,7 +143,7 @@ static int rtsps_setup_tcp(int port)
 
 handle rtsps_init(int port)
 {
-    CHECK(port > 0, NULL, "invalid parameter.\n");
+    CHECK(port > 0 && port < 65536, NULL, "invalid parameter with: %#x\n", port);
 
     int ret = -1;
     rtsps_s* pRtsps = (rtsps_s*)mem_malloc(sizeof(rtsps_s));
@@ -165,7 +165,7 @@ handle rtsps_init(int port)
 
 int rtsps_destroy(handle hndRtsps)
 {
-    CHECK(hndRtsps, -1, "invalid parameter.\n");
+    CHECK(hndRtsps, -1, "invalid parameter with: %#x\n", hndRtsps);
 
     int ret = -1;
     rtsps_s* pRtsps = (rtsps_s*)hndRtsps;

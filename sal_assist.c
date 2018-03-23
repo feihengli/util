@@ -11,6 +11,7 @@
 #include "sal_lbr.h"
 #include "sal_af.h"
 #include "sal_jpeg.h"
+#include "sal_audio.h"
 #include "sal_draw_rectangle.h"
 
 /*
@@ -27,6 +28,7 @@ int sal_assist()
     __main();
     extern int vo_init();
     vo_init();
+    sal_audio_init(NULL);
 	
 	return 0;
 }

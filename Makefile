@@ -13,7 +13,7 @@ $(TARGET): $(OBJS)
 	make -C $(PLATFORM)
 	@echo
 	$(LINK) -shared -o $@ $^ $(LIBS)
-	$(STRIP) $@
+	$(STRIP) --strip-debug --strip-unneeded $@
 
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<

@@ -558,9 +558,9 @@ HI_S32 vpss_chn_dump_main(int argc, const char* argv[])
 
 int sal_yuv_get(int stream, char* buffer, int len)
 {
-    CHECK(stream >= 0 && stream <= 1, -1, "invalid parameters\n");
-    CHECK(buffer, -1, "invalid parameters\n");
-    CHECK(len > 0, -1, "invalid parameters\n");
+    CHECK(stream >= 0 && stream <= 1, -1, "invalid parameters with: %#x\n", stream);
+    CHECK(buffer, -1, "invalid parameters with: %#x\n", buffer);
+    CHECK(len > 0, -1, "invalid parameters with: %#x\n", len);
 
     gbuffer = buffer;
     gbuffer_offset = 0;

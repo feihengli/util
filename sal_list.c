@@ -15,12 +15,12 @@ typedef struct list_node_s
 
 typedef struct list_s
 {
+    unsigned int u32MagicNumer;
     int s32Cnt; // node numbers of list
     int s32NodeDataSize; // node size
 
     list_node_s* pstHead;
     list_node_s* pstTail;
-    unsigned int u32MagicNumer;
 }list_s;
 
 static list_node_s* list_look_up(handle _hndList, void* pData)
@@ -51,11 +51,11 @@ handle list_init(int s32NodeDataSize)
     CHECK(NULL != pstList, NULL, "failed to malloc %d\n", sizeof(list_s));
 
     memset(pstList, 0, sizeof(list_s));
+    pstList->u32MagicNumer = LIST_MAGIC_NUM;
     pstList->s32NodeDataSize = s32NodeDataSize;
     pstList->s32Cnt = 0;
     pstList->pstHead = NULL;
     pstList->pstTail = NULL;
-    pstList->u32MagicNumer = LIST_MAGIC_NUM;
 
     return (handle)pstList;
 }
@@ -65,7 +65,8 @@ destroy list, free resource
 */
 int list_destroy(handle _hndList)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     int ret = -1;
     ret = list_clear(_hndList);
@@ -81,8 +82,9 @@ add one node from list head
 */
 int list_push_front(handle _hndList, void* pData, int DataSize)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
-    CHECK(NULL != pData, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
+    CHECK(NULL != pData, -1, "invalid parameter with: %#x\n", pData);
 
     list_s* pstList = (list_s*)_hndList;
     CHECK(pstList->s32NodeDataSize == DataSize, -1, "invalid parameter.\n");
@@ -117,8 +119,9 @@ add one node from list tail
 */
 int list_push_back(handle _hndList, void* pData, int DataSize)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
-    CHECK(NULL != pData, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
+    CHECK(NULL != pData, -1, "invalid parameter with: %#x\n", pData);
     //DBG("magic number: %#x\n", (unsigned int*)_hndList);
 
     list_s* pstList = (list_s*)_hndList;
@@ -154,8 +157,9 @@ int list_push_back(handle _hndList, void* pData, int DataSize)
 */
 int list_del(handle _hndList, void* pData)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
-    CHECK(NULL != pData, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
+    CHECK(NULL != pData, -1, "invalid parameter with: %#x\n", pData);
 
     list_s* pstList = (list_s*)_hndList;
     list_node_s* pstFind = list_look_up(pstList, pData);
@@ -197,7 +201,8 @@ int list_del(handle _hndList, void* pData)
 */
 int list_pop_front(handle _hndList)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     list_s* pstList = (list_s*)_hndList;
     if (NULL != pstList->pstHead)
@@ -228,7 +233,8 @@ int list_pop_front(handle _hndList)
 */
 int list_pop_back(handle _hndList)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     list_s* pstList = (list_s*)_hndList;
     if (NULL != pstList->pstTail)
@@ -259,7 +265,8 @@ delete all nodes of list
 */
 int list_clear(handle _hndList)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     int ret = -1;
     while (list_size(_hndList) > 0)
@@ -276,7 +283,8 @@ return the numbers of list node
 */
 int list_size(handle _hndList)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     list_s* pstList = (list_s*)_hndList;
 
@@ -288,7 +296,8 @@ return head node of list
 */
 void* list_front(handle _hndList)
 {
-    CHECK(NULL != _hndList, NULL, "invalid parameter.\n");
+    CHECK(NULL != _hndList, NULL, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, NULL, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     list_s* pstList = (list_s*)_hndList;
 
@@ -300,7 +309,8 @@ return tail node of list
 */
 void* list_back(handle _hndList)
 {
-    CHECK(NULL != _hndList, NULL, "invalid parameter.\n");
+    CHECK(NULL != _hndList, NULL, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, NULL, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     list_s* pstList = (list_s*)_hndList;
 
@@ -312,7 +322,8 @@ if list is empty, then return true
 */
 int list_empty(handle _hndList)
 {
-    CHECK(NULL != _hndList, -1, "invalid parameter.\n");
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
 
     list_s* pstList = (list_s*)_hndList;
 
@@ -324,8 +335,9 @@ return next node of list
 */
 void* list_next(handle _hndList, void* pData)
 {
-    CHECK(NULL != _hndList, NULL, "invalid parameter.\n");
-    CHECK(NULL != pData, NULL, "invalid parameter.\n");
+    CHECK(NULL != _hndList, NULL, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, NULL, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
+    CHECK(NULL != pData, NULL, "invalid parameter with: %#x\n", pData);
 
     list_node_s* pstFind = list_look_up(_hndList, pData);
     if (NULL != pstFind && NULL != pstFind->pstNext)
@@ -341,8 +353,9 @@ return previous node of list
 */
 void* list_prev(handle _hndList, void* pData)
 {
-    CHECK(NULL != _hndList, NULL, "invalid parameter.\n");
-    CHECK(NULL != pData, NULL, "invalid parameter.\n");
+    CHECK(NULL != _hndList, NULL, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, NULL, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
+    CHECK(NULL != pData, NULL, "invalid parameter with: %#x\n", pData);
 
     list_node_s* pstFind = list_look_up(_hndList, pData);
     if (NULL != pstFind && NULL != pstFind->pstPrev)
