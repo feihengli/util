@@ -24,11 +24,13 @@ int sal_assist()
 {
 	sal_jpeg_init(NULL);
     sal_dr_init();
-    extern __main();
+    extern int __main();
     __main();
     extern int vo_init();
     vo_init();
     sal_audio_init(NULL);
+    extern int sal_pc_init();
+    sal_pc_init();
 	
 	return 0;
 }

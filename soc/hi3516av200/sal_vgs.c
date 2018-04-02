@@ -135,6 +135,54 @@ int sal_vgs_draw_rectangle1(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned int u3
     free(pstADrawLine);
 
     return 0;
-    }
+}
 
+
+int sal_vgs_draw_osd(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned char* buffer, int width,int height)
+{
+    //CHECK(pstOutFrameInfo, HI_FAILURE, "invalid parameter with %#x\n", pstOutFrameInfo);
+
+    HI_S32  s32Ret = HI_FAILURE;
+    VGS_HANDLE hVgsHandle = -1;
+    VGS_TASK_ATTR_S stVgsTaskAttr;
+    memset(&stVgsTaskAttr, 0, sizeof(VGS_TASK_ATTR_S));
+    VGS_ADD_OSD_S stVgsAddOsd;
+    memset(&stVgsAddOsd, 0, sizeof(stVgsAddOsd));
+    
+    stVgsAddOsd.enPixelFmt = PIXEL_FORMAT_RGB_1555; //PIXEL_FORMAT_RGB_8888;
+    stVgsAddOsd.stRect.s32X = pstOutFrameInfo->stVFrame.u32Width - width;
+    stVgsAddOsd.stRect.s32Y = (pstOutFrameInfo->stVFrame.u32Height-height)/2;
+    stVgsAddOsd.stRect.u32Width = width;
+    stVgsAddOsd.stRect.u32Height = height;
+    stVgsAddOsd.u32BgColor = 0;
+    stVgsAddOsd.u32BgAlpha = 0;
+    stVgsAddOsd.u32FgAlpha = 255;
+    stVgsAddOsd.u32PhyAddr = 0;
+    stVgsAddOsd.u32Stride = width*2; //stVgsAddOsd.stRect.u32Width;
+    
+    unsigned char* pu8VirAddr = NULL;
+    unsigned int u32Size = stVgsAddOsd.u32Stride * stVgsAddOsd.stRect.u32Height;
+    s32Ret = HI_MPI_SYS_MmzAlloc(&stVgsAddOsd.u32PhyAddr, (void**)&pu8VirAddr, "vgs_osd", HI_NULL, u32Size);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    //CHECK(u32Size == width*height*2, HI_FAILURE, "invalid size %d\n", size);
+    memcpy(pu8VirAddr, buffer, u32Size);
+
+    s32Ret = HI_MPI_VGS_BeginJob(&hVgsHandle);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    memcpy(&stVgsTaskAttr.stImgIn, pstOutFrameInfo, sizeof(VIDEO_FRAME_INFO_S));
+    memcpy(&stVgsTaskAttr.stImgOut, pstOutFrameInfo, sizeof(VIDEO_FRAME_INFO_S));
+
+    s32Ret = HI_MPI_VGS_AddOsdTask(hVgsHandle, &stVgsTaskAttr, &stVgsAddOsd);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    s32Ret = HI_MPI_VGS_EndJob(hVgsHandle);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    
+    s32Ret = HI_MPI_SYS_MmzFree(stVgsAddOsd.u32PhyAddr, pu8VirAddr);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+
+    return 0;
+}
 

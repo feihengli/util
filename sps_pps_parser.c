@@ -54,9 +54,9 @@ static int get_bits(void *h, int n)
     get_bit_context *ptr = (get_bit_context *)h;  
     uint8_t temp[5] = { 0 };  
     uint8_t *cur_char = NULL;  
-    uint8_t nbyte;  
-    uint8_t shift;  
-    uint32_t result;  
+    uint8_t nbyte = 0;  
+    uint8_t shift = 0;  
+    uint32_t result = 0;  
     uint64_t ret = 0;  
   
     if (NULL == ptr)  

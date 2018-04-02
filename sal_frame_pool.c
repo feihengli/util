@@ -4,6 +4,7 @@
 #include "sal_malloc.h"
 #include "sal_frame_pool.h"
 #include "sps_pps_parser.h"
+#include "sal_av.h"
 
 typedef struct frame_pool_s
 {
@@ -24,7 +25,7 @@ typedef struct reader_s
     int pps_size;
     unsigned char vps[64];
     int vps_size;
-    frame_info_s* pstLastVKeyFrame;
+    frame_info_s* pstLastFrame;
     
     FRAME_TYPE_E vframe_type;
     FRAME_TYPE_E aframe_type;
@@ -190,8 +191,8 @@ static frame_info_s* frame_pool_akey_find(handle hndlist, int head)
 
 int frame_pool_split_vframe(unsigned char* _pu8Frame, int _u32FrameSize)
 {
-    CHECK(NULL != _pu8Frame, NULL, "invalid parameter with: %#x\n", _pu8Frame);
-    CHECK(_u32FrameSize >= 4, NULL, "invalid parameter with: %#x\n", _u32FrameSize);
+    CHECK(NULL != _pu8Frame, -1, "invalid parameter with: %#x\n", _pu8Frame);
+    CHECK(_u32FrameSize >= 4, -1, "invalid parameter with: %#x\n", _u32FrameSize);
     
     int i = 0;
     for(i = 4; i < _u32FrameSize - 4; i++)
@@ -226,7 +227,7 @@ handle frame_pool_register(handle hndFramePool, int head)
 
     pstReader->pstFramePool = pstFramePool;
     pstReader->head = head;
-    pstReader->pstLastVKeyFrame = pstLastVKeyFrame;
+    pstReader->pstLastFrame = pstLastVKeyFrame;
     pstReader->vframe_type = pstLastVKeyFrame->type;
     pstReader->aframe_type = FRAME_TYPE_INVALID;
     if (pstLastAKeyFrame)
@@ -320,8 +321,9 @@ int frame_pool_unregister(handle hndReader)
 }
 
 /*
-*可能存在frame_pool_register成功后过了很久才frame_pool_get，导致pstLastVKeyFrame已经被删除了
+*可能存在frame_pool_register成功后过了很久才frame_pool_get，导致pstLastFrame已经被删除了
 *的风险，list_next会返回NULL，所以frame_pool_get一直会返回NULL
+*frame_pool_get取的速度比add的速度快是会返回NULL的
 */
 frame_info_s* frame_pool_get(handle hndReader)
 {
@@ -332,14 +334,24 @@ frame_info_s* frame_pool_get(handle hndReader)
 
     pthread_mutex_lock(&pstReader->pstFramePool->mutex);
     frame_info_s* ret_fm = NULL;
-    if (pstReader->pstLastVKeyFrame)
+    frame_info_s* last_frame = list_next(pstReader->pstFramePool->hndlist, pstReader->pstLastFrame);
+    if (last_frame != NULL)
     {
-        frame_info_s* last_frame = list_next(pstReader->pstFramePool->hndlist, pstReader->pstLastVKeyFrame);
-        if (last_frame)
+        pstReader->pstLastFrame->reference++;
+        ret_fm = pstReader->pstLastFrame;
+        pstReader->pstLastFrame = last_frame;
+    }
+    else
+    {
+        //节点不存在
+        if (!list_exist(pstReader->pstFramePool->hndlist, pstReader->pstLastFrame))
         {
-            pstReader->pstLastVKeyFrame->reference++;
-            ret_fm = pstReader->pstLastVKeyFrame;
-            pstReader->pstLastVKeyFrame = last_frame;
+            WRN("ordinal frame has been deleted.we need to wait for last key frame\n");
+            frame_info_s* pstLastVKeyFrame = frame_pool_vkey_find(pstReader->pstFramePool->hndlist, pstReader->head);
+            if (pstLastVKeyFrame)
+            {
+                pstReader->pstLastFrame = pstLastVKeyFrame;
+            }
         }
     }
 

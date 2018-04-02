@@ -72,7 +72,7 @@ int jpeg1_set_Qfactor(int channel, int Qfactor)
     return HI_SUCCESS;
 }
 
-static int jpeg1_write_frame(char* addr, int size)
+static int jpeg1_write_frame(unsigned char* addr, int size)
 {
     static FILE* fp = NULL;
     static int count = 0;
@@ -119,7 +119,7 @@ static int jpeg1_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S*
 
     if (JPEG1_LOCAL_TEST)
     {
-        s32Ret = jpeg1_write_frame((char*)frame_addr, frame_len);
+        s32Ret = jpeg1_write_frame(frame_addr, frame_len);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
 
@@ -172,7 +172,7 @@ static int jpeg1_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_ST
 
     if (JPEG1_LOCAL_TEST)
     {
-        s32Ret = jpeg1_write_frame((char*)buffer, buffer_offset);
+        s32Ret = jpeg1_write_frame(buffer, buffer_offset);
         CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     }
 

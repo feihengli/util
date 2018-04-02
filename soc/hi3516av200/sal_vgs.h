@@ -48,6 +48,18 @@ int sal_vgs_draw_rectangle(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned int u32
 int sal_vgs_draw_rectangle1(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned int u32Thick, unsigned int u32Color
                             , rectangle_s* pstArectangle, int num);
 
+/*
+ 函 数 名: sal_vgs_draw_osd
+ 功能描述: 画OSD
+ 输入参数: pstOutFrameInfo 帧信息，一般从vpss模块获取
+            buffer RGB1555数据
+            width 宽 2字节对齐
+            height 高 2字节对齐
+ 输出参数: 无
+ 返 回 值: 成功返回0,失败返回小于0
+*/
+int sal_vgs_draw_osd(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned char* buffer, int width,int height);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -53,7 +53,7 @@ int util_time_pass(struct timeval* previous);
  输出参数: 无
  返 回 值: 成功返回0,失败返回小于0
 */
-int util_file_size(char* path);
+int util_file_size(const char* path);
 
 /*
  函 数 名: util_file_read

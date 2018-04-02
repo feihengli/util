@@ -142,6 +142,15 @@ void* list_prev(handle _hndList, void* pData);
 */
 int list_empty(handle _hndList);
 
+/*
+ 函 数 名: list_exist
+ 功能描述: 节点是否存在于链表
+ 输入参数:  _hndList 链表句柄
+            pData 节点
+ 输出参数: 无
+ 返 回 值: 成功返回真,失败返回假
+*/
+int list_exist(handle _hndList, void* pData);
 
 #ifdef __cplusplus
 #if __cplusplus

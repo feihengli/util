@@ -70,7 +70,7 @@ LIBS+=$(PLATFORM)/common_lib/libmp4v2.a
 LIBS+=$(PLATFORM)/common_lib/libihwdet.a
 export LIBS
 
-CFLAGS += -g -Wall -fPIC
+CFLAGS += -g -Wall -fPIC -Os
 CFLAGS += -mcpu=cortex-a17.cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4 -mno-unaligned-access -fno-aggressive-loop-optimizations
 CFLAGS += -DSENSOR_TYPE=$(SENSOR_TYPE)
 CFLAGS += -D$(HIARCH)

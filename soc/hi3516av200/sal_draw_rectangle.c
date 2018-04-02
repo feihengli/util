@@ -5,6 +5,7 @@
 #include "sal_draw_rectangle.h"
 //#include "libjpeg/jpeglib.h"
 #include "libjpeg-turbo/jpeglib.h"
+#include "sal_jpeg1.h"
 
 typedef struct sal_dr_args
 {
@@ -177,10 +178,10 @@ static void* dr_proc(void* args)
             int cutW = 192;
             int cutH = 192;
             int size = cutW*cutH*3/2;
-            char* dstBuff = malloc(size);
+            unsigned char* dstBuff = malloc(size);
             dr_cutYuv420sp(dstBuff, yuv420sp, 100, 100, cutW, cutH, stFrame.stVFrame.u32Width, stFrame.stVFrame.u32Height);
             
-            char* dstBuff1 = malloc(size);
+            unsigned char* dstBuff1 = malloc(size);
             dr_cutYuv420sp(dstBuff1, yuv420sp, 200, 100, cutW, cutH, stFrame.stVFrame.u32Width, stFrame.stVFrame.u32Height);
             
             memcpy(yuv420sp, dstBuff, size);
@@ -289,7 +290,7 @@ static void* dr_proc1(void* args)
             int cutW = 192;
             int cutH = 192;
             int size = cutW*cutH*3/2;
-            char* dstBuff = malloc(size);
+            unsigned char* dstBuff = malloc(size);
             dr_cutYuv420sp(dstBuff, yuv420sp, 100, 100, cutW, cutH, stFrame.stVFrame.u32Width, stFrame.stVFrame.u32Height);
             
             memcpy(yuv420sp, dstBuff, size);

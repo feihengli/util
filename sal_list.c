@@ -331,6 +331,25 @@ int list_empty(handle _hndList)
 }
 
 /*
+if the node is exist in list, then return true
+*/
+int list_exist(handle _hndList, void* pData)
+{
+    CHECK(NULL != _hndList, -1, "invalid parameter with: %#x\n", _hndList);
+    CHECK(*((unsigned int*)_hndList) == LIST_MAGIC_NUM, -1, "invalid parameter with: %#x\n", *((unsigned int*)_hndList));
+    CHECK(NULL != pData, -1, "invalid parameter with: %#x\n", pData);
+    
+    int bExist = 0;
+    list_node_s* pstFind = list_look_up(_hndList, pData);
+    if (NULL != pstFind)
+    {
+        bExist = 1;
+    }
+
+    return bExist;
+}
+
+/*
 return next node of list
 */
 void* list_next(handle _hndList, void* pData)

@@ -7,6 +7,7 @@
 #include "sal_debug.h"
 #include "sal_malloc.h"
 #include "sal_util.h"
+#include "sal_av.h"
 
 #include "sal_rtsp_server.h"
 #include "sal_rtsp_process.h"
@@ -565,13 +566,21 @@ static char* __MakeSdpH265(RTSP_SERVER_S* _pstRtspServer, char* _szIp, unsigned 
 static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
 {
     int ret = -1;
+    struct timeval pre_time = {0, 0};
+    util_time_abs(&pre_time);
 
     if (NULL == _pstRtspServer->hndReader)
     {
+        ret = sal_video_force_idr(0);
+        CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+        
         if (_bIsMainStream)
         {
             do
             {
+                int pass_time = util_time_pass(&pre_time);
+                CHECK(pass_time < 2000, -1, "frame_pool_register time out with: %d\n", pass_time);
+
                 _pstRtspServer->hndReader = frame_pool_register(gHndMainFramePool, 0);
                 usleep(20*1000);
             }
@@ -580,8 +589,14 @@ static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
         }
         else
         {
+            ret = sal_video_force_idr(1);
+            CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+            
             do
             {
+                int pass_time = util_time_pass(&pre_time);
+                CHECK(pass_time < 2000, -1, "frame_pool_register time out with: %d\n", pass_time);
+                
                 _pstRtspServer->hndReader = frame_pool_register(gHndSubFramePool, 0);
                 usleep(20*1000);
             }
@@ -1668,7 +1683,7 @@ void* rtsp_process(void* _pstSession)
     stRtspServer.server_Aport[1] = base_port++;
     
     stRtspServer.bVSupport = 1;
-    stRtspServer.bASupport = 1;
+    stRtspServer.bASupport = 0;
     CHECK(stRtspServer.bVSupport || stRtspServer.bASupport, NULL, "Error with: %#x %#x\n", stRtspServer.bVSupport, stRtspServer.bASupport);
     
     char* data = NULL;

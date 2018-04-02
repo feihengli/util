@@ -65,7 +65,7 @@ char* util_time_string(void)
     return time;
 }
 
-int util_file_size(char* path)
+int util_file_size(const char* path)
 {
     CHECK(path, -1, "invalid parameter with: %#x\n", path);
 
@@ -80,7 +80,13 @@ int util_file_size(char* path)
 int util_file_read(const char* path, unsigned char* buf, int len)
 {
     CHECK(path, -1, "invalid parameter with: %#x\n", path);
-
+    
+    unsigned int filesize = util_file_size(path);
+    CHECK(filesize > 0, -1, "error with: %#x\n", filesize);
+    
+    //buffer过小
+    CHECK(len >= filesize, -1, "buffer is too small with: %d.filesize: %d\n", len, filesize);
+    
     FILE* fp = fopen(path, "r");
     CHECK(fp, -1, "error with %#x: %s\n", fp, strerror(errno));
 
@@ -91,8 +97,7 @@ int util_file_read(const char* path, unsigned char* buf, int len)
         CHECK(tmp >= 0, -1, "error with %#x: %s\n", tmp, strerror(errno));
         read_len += tmp;
     }
-    //buffer过小导致读取到的内容不是整个文件的内容
-    CHECK(feof(fp), -1, "buffer is too small with: %d\n", len);
+    
     fclose(fp);
     return read_len;
 }

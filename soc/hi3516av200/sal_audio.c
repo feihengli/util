@@ -655,9 +655,9 @@ static HI_VOID * audio_thread(void * pParam)
 
 static int audio_vqe_start()
 {
-    HI_S32 s32Ret;
-    AI_TALKVQE_CONFIG_S aiVqeConfig;
-    memset(&aiVqeConfig, 0, sizeof(aiVqeConfig));
+    //HI_S32 s32Ret = -1;
+    //AI_TALKVQE_CONFIG_S aiVqeConfig;
+    //memset(&aiVqeConfig, 0, sizeof(aiVqeConfig));
 /*
     AI_VQE_CONFIG_S getAiVqeConfig;
     HI_S32 s32VolumeDb;
@@ -716,7 +716,7 @@ static int audio_vqe_start()
     //s32Ret = HI_MPI_AO_EnableVqe(0, 0);
     //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
-    return  s32Ret;
+    return HI_SUCCESS;
 }
 
 static int audio_aenc_start(AIO_ATTR_S * pstAioAttr)
