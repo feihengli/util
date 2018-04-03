@@ -63,7 +63,7 @@ int frame_pool_destroy(handle hndFramePool);
  输出参数: 无
  返 回 值: 成功返回0,失败返回小于0
 */
-int frame_pool_add(handle hndFramePool, char *frame, unsigned long len, FRAME_TYPE_E type, int key, double pts);
+int frame_pool_add(handle hndFramePool, unsigned char *frame, unsigned long len, FRAME_TYPE_E type, int key, double pts);
 
 /*
  函 数 名: frame_pool_register

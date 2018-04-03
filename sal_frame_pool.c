@@ -77,7 +77,7 @@ int frame_pool_destroy(handle hndFramePool)
     return 0;
 }
 
-int frame_pool_add(handle hndFramePool, char *frame, unsigned long len, FRAME_TYPE_E type, int key, double pts)
+int frame_pool_add(handle hndFramePool, unsigned char *frame, unsigned long len, FRAME_TYPE_E type, int key, double pts)
 {
     CHECK(NULL != hndFramePool, -1, "invalid parameter with: %#x\n", hndFramePool);
 
@@ -87,7 +87,7 @@ int frame_pool_add(handle hndFramePool, char *frame, unsigned long len, FRAME_TY
     ret = pthread_mutex_lock(&pstFramePool->mutex);
     CHECK(ret == 0 , -1, "error with %s\n", strerror(errno));
 
-    if (list_size(pstFramePool->hndlist) >= pstFramePool->capacity)
+    while (list_size(pstFramePool->hndlist) >= pstFramePool->capacity)
     {
         frame_info_s* frame_info = list_front(pstFramePool->hndlist);
         if (frame_info->reference <= 0) //
@@ -95,6 +95,10 @@ int frame_pool_add(handle hndFramePool, char *frame, unsigned long len, FRAME_TY
             mem_free(frame_info->data);
             ret = list_pop_front(pstFramePool->hndlist);
             CHECK(ret == 0, -1, "error with %#x\n", ret);
+        }
+        else
+        {
+            break;
         }
     }
 
@@ -321,8 +325,7 @@ int frame_pool_unregister(handle hndReader)
 }
 
 /*
-*可能存在frame_pool_register成功后过了很久才frame_pool_get，导致pstLastFrame已经被删除了
-*的风险，list_next会返回NULL，所以frame_pool_get一直会返回NULL
+*可能存在frame_pool_register成功后过了很久才frame_pool_get，导致pstLastFrame已经被删除了的风险，list_next会返回NULL
 *frame_pool_get取的速度比add的速度快是会返回NULL的
 */
 frame_info_s* frame_pool_get(handle hndReader)

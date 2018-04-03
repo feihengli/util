@@ -39,7 +39,7 @@ typedef struct sal_av_args
     int lowdelay_enable;  // 低延迟模式
     int onebuffer_enable; // 单vb模式，需结合低延迟模式才有效
     int onestream_enable;//单包模式/多包模式
-    char* multiple_buffer; //多包模式下需要使用buffer来拼合一个帧
+    unsigned char* multiple_buffer; //多包模式下需要使用buffer来拼合一个帧
     int online_enable;
 
     int running;
@@ -85,7 +85,17 @@ static VI_DEV_ATTR_S DEV_ATTR_MIPI_BASE =
     /* bRever */
     HI_FALSE,
     /* DEV CROP */
-    {0, 0, 1920, 1080}
+    {0, 0, 1920, 1080},
+    {
+        {
+            {1920, 1080},
+            HI_FALSE,
+        },
+        {
+            VI_REPHASE_MODE_NONE,
+            VI_REPHASE_MODE_NONE
+        }
+    }
 };
 
 static VI_DEV_ATTR_EX_S DEV_ATTR_LVDS_BASE_EX =
@@ -496,6 +506,46 @@ combo_dev_attr_t DEV_COMBO_IMX274_MIPI_12BIT_4K_WDR =
     }
 };
 
+combo_dev_attr_t MIPI_4lane_SENSOR_IMX327_1080P_12BIT_NOWDR_ATTR =
+{
+    .devno         = 0,
+    .input_mode    = INPUT_MODE_MIPI,      /* input mode */
+    .phy_clk_share = PHY_CLK_SHARE_NONE,
+    .img_rect = {0, 0, 1920, 1080},
+
+    .mipi_attr =
+    {
+        .raw_data_type = RAW_DATA_12BIT,
+        .wdr_mode      = HI_WDR_MODE_NONE,
+        .lane_id       = {0, 1, 2, 3, -1, -1, -1, -1}
+    }
+};
+
+combo_dev_attr_t MIPI_4lane_SENSOR_IMX327_1080P_10BIT_2WDR1_ATTR = 
+{
+    .devno = 0,
+    .input_mode = INPUT_MODE_MIPI,
+    .phy_clk_share = PHY_CLK_SHARE_NONE,
+    .img_rect = {0, 0, 1920, 1080},
+
+    .mipi_attr =    
+    {
+        .raw_data_type = RAW_DATA_10BIT,
+        .wdr_mode = HI_MIPI_WDR_MODE_DOL,
+        .lane_id = {0, 1, 2, 3, -1, -1, -1, -1}
+    }
+};
+
+const ISP_SNS_OBJ_S* g_pstSnsObj[2] =
+{
+#if defined(SNS_IMX274_MIPI_SINGLE)
+    &stSnsImx274Obj, NULL
+#elif defined(SNS_IMX327_MIPI_SINGLE)
+    &stSnsImx327Obj, NULL
+#else
+    NULL, NULL
+#endif
+};
 
 static int sys_vb_size(int width, int height, int align_width)
 {
@@ -679,6 +729,14 @@ static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
             memcpy(&stcomboDevAttr, &DEV_COMBO_IMX274_MIPI_12BIT_4K_WDR, sizeof(stcomboDevAttr));
         }
     }
+    else if (pstViConfig->enViMode == SONY_IMX327_MIPI_1080P_30FPS)
+    {
+        memcpy(&stcomboDevAttr, &MIPI_4lane_SENSOR_IMX327_1080P_12BIT_NOWDR_ATTR, sizeof(stcomboDevAttr));
+        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
+        {
+            memcpy(&stcomboDevAttr, &MIPI_4lane_SENSOR_IMX327_1080P_10BIT_2WDR1_ATTR, sizeof(stcomboDevAttr));
+        }
+    }
     else
     {
         DBG("Unknown sensor type: %d.\n", pstViConfig->enViMode);
@@ -776,6 +834,14 @@ static int vi_set_dev(VI_DEV ViDev, SAMPLE_VI_CONFIG_S* pstViConfig)
         if (pstViConfig->enWDRMode != WDR_MODE_NONE)
         {
             memcpy(&stViDevAttr, &DEV_ATTR_IMX274_MIPI_12BIT_4K_WDR, sizeof(stViDevAttr));
+        }
+    }
+    else if (g_av_args->sensor_type == SONY_IMX327_MIPI_1080P_30FPS)
+    {
+        memcpy(&stViDevAttr, &DEV_ATTR_MIPI_BASE, sizeof(stViDevAttr));
+        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
+        {
+            memcpy(&stViDevAttr, &DEV_ATTR_MIPI_BASE, sizeof(stViDevAttr));
         }
     }
     else
@@ -948,20 +1014,9 @@ static int isp_init(WDR_MODE_E  enWDRMode)
     stAwbLib.s32Id = 0;
     strcpy(stAwbLib.acLibName, HI_AWB_LIB_NAME);
     
-    ISP_SNS_OBJ_S* pstSnsObj = NULL;
-
-    if (g_av_args->sensor_type == SONY_IMX226_LVDS_12M_30FPS)
-    {
-        //extern ISP_SNS_OBJ_S stSnsImx226Obj;
-        //pstSnsObj = &stSnsImx226Obj;
-    }
-    if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
-    {
-        extern ISP_SNS_OBJ_S stSnsImx274Obj;
-        pstSnsObj = &stSnsImx274Obj;
-    }
-
+    ISP_SNS_OBJ_S* pstSnsObj = g_pstSnsObj[0];
     CHECK(pstSnsObj != NULL, HI_FAILURE, "Error with %#x.\n", pstSnsObj);
+    
     s32Ret = pstSnsObj->pfnRegisterCallback(IspDev, &stAeLib, &stAwbLib);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     
@@ -1024,6 +1079,10 @@ static int isp_init(WDR_MODE_E  enWDRMode)
         stPubAttr.enBayer = BAYER_RGGB;
     }
     else if (g_av_args->sensor_type == SONY_IMX274_MIPI_8M_30FPS)
+    {
+        stPubAttr.enBayer = BAYER_RGGB;
+    }
+    else if (g_av_args->sensor_type == SONY_IMX327_MIPI_1080P_30FPS)
     {
         stPubAttr.enBayer = BAYER_RGGB;
     }
@@ -1748,7 +1807,7 @@ static int venc_pipe_write(int stream_id, const void* frame, int len)
     return 0;
 }
 
-static int venc_write_cb(int stream_id, unsigned long long pts, char *data, int len, int keyFrame, SAL_ENCODE_TYPE_E encode_type)
+static int venc_write_cb(int stream_id, unsigned long long pts, unsigned char *data, int len, int keyFrame, SAL_ENCODE_TYPE_E encode_type)
 {
     double timestamp = pts/1000;
 
@@ -1806,7 +1865,7 @@ static int venc_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* 
         CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
     }
 
-    s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, (char*)frame_addr, frame_len, isKey, stream->encode_type);
+    s32Ret = venc_write_cb(i, pstStream->pstPack->u64PTS, frame_addr, frame_len, isKey, stream->encode_type);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     s32Ret = HI_MPI_VENC_ReleaseStream(i, pstStream);
@@ -1818,7 +1877,7 @@ static int venc_one_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* 
 static int venc_multiple_pack(VENC_CHN i, VENC_STREAM_S* pstStream, VENC_CHN_STAT_S* pstStat)
 {
     HI_S32 s32Ret = HI_FAILURE;
-    char* buffer = g_av_args->multiple_buffer;
+    unsigned char* buffer = g_av_args->multiple_buffer;
 
     //DBG("u32CurPacks: %u\n", pstStat->u32CurPacks);
     pstStream->pstPack = (VENC_PACK_S*)malloc(sizeof(VENC_PACK_S) * pstStat->u32CurPacks);
@@ -2082,6 +2141,8 @@ int sal_sys_init(sal_video_s* video)
     //imx274
     //himm 0x1201004c 0x00094C43;vi0 clk = 600M
     //himm 0x12010054 0x00008043;isp clk = vi clk(600M)
+    //imx327 
+    //himm 0x12010040: 0x00001818;sensor clk 37.125MHz
     g_av_args = (sal_av_args*)malloc(sizeof(sal_av_args));
     CHECK(g_av_args != NULL, HI_FAILURE, "malloc %d bytes failed.\n", sizeof(sal_av_args));
 

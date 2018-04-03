@@ -52,8 +52,9 @@ typedef struct curl_wrapper_s
 }
 curl_wrapper_s;
 
-static size_t _Onrecv(void* buffer, size_t size, size_t nmemb, curl_wrapper_s* pstCurlWrapper)
+static size_t _Onrecv(void* buffer, size_t size, size_t nmemb, const void* _pstCurlWrapper)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
     DBG("buffer=%p, size=%u, nmemb=%u, pstCurlWrapper=%p\n", buffer, size, nmemb, pstCurlWrapper);
 
     int s32Ret;
@@ -75,8 +76,9 @@ static size_t _Onrecv(void* buffer, size_t size, size_t nmemb, curl_wrapper_s* p
     return -1;
 }
 
-static size_t _OnRecv2mem(void* buffer, size_t size, size_t nmemb, curl_wrapper_s* pstCurlWrapper)
+static size_t _OnRecv2mem(void* buffer, size_t size, size_t nmemb, const void* _pstCurlWrapper)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
     //DBG("buffer=%p, size=%u, nmemb=%u, pstCurlWrapper=%p\n", buffer, size, nmemb, pstCurlWrapper);
 
     //int s32Ret = -1;
@@ -136,8 +138,9 @@ static size_t _OnRecv2mem(void* buffer, size_t size, size_t nmemb, curl_wrapper_
     return -1;
 }
 
-static size_t _Onsend(void *buffer, size_t size, size_t nmemb, curl_wrapper_s* pstCurlWrapper)
+static size_t _Onsend(void *buffer, size_t size, size_t nmemb, const void* _pstCurlWrapper)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
     //DBG("buffer=%p, size=%u, nmemb=%u, pstCurlWrapper=%p\n", buffer, size, nmemb, pstCurlWrapper);
 
     int s32Ret;
@@ -158,8 +161,9 @@ static size_t _Onsend(void *buffer, size_t size, size_t nmemb, curl_wrapper_s* p
     return -1;
 }
 
-static size_t _OnDlProgress(curl_wrapper_s* pstCurlWrapper, double dltotal, double dlnow, double ultotal, double ulnow)
+static int _OnDlProgress(const void* _pstCurlWrapper, double dltotal, double dlnow, double ultotal, double ulnow)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
     //DBG("pstCurlWrapper=%p, dltotal=%d, dlnow=%d, ultotal=%d, ulnow=%d\n", pstCurlWrapper, (int)dltotal, (int)dlnow, (int)ultotal, (int)ulnow);
 
     if(pstCurlWrapper->bRunning == 0 && dlnow != dltotal)
@@ -200,8 +204,9 @@ static size_t _OnDlProgress(curl_wrapper_s* pstCurlWrapper, double dltotal, doub
     return tRet;
 }
 
-static size_t _OnUlProgress(curl_wrapper_s* pstCurlWrapper, double dltotal, double dlnow, double ultotal, double ulnow)
+static int _OnUlProgress(const void* _pstCurlWrapper, double dltotal, double dlnow, double ultotal, double ulnow)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
     //DBG("pstCurlWrapper=%p, dltotal=%d, dlnow=%d, ultotal=%d, ulnow=%d\n", pstCurlWrapper, (int)dltotal, (int)dlnow, (int)ultotal, (int)ulnow);
 
     //todo:why no using this func?
@@ -264,8 +269,9 @@ static void* _Proc(void* _pArgs)
     return NULL;
 }
 
-static size_t _OnHttpPostHead(void* buffer, size_t size, size_t nmemb, curl_wrapper_s* pstCurlWrapper)
+static size_t _OnHttpPostHead(void* buffer, size_t size, size_t nmemb, const void* _pstCurlWrapper)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
     //DBG("pstCurlWrapper=%p, size=%d, nmemb=%d, buffer=\"%s\"\n", pstCurlWrapper, size, nmemb, (char*)buffer);
 
     ASSERT(pstCurlWrapper->u32PostRecvCurr < pstCurlWrapper->u32PostRecvTotal, "u32PostRecvTotal %u, u32PostRecvCurr %u\n", pstCurlWrapper->u32PostRecvTotal, pstCurlWrapper->u32PostRecvCurr);
@@ -281,10 +287,11 @@ static size_t _OnHttpPostHead(void* buffer, size_t size, size_t nmemb, curl_wrap
     return s32NeedCopy;
 }
 
-static size_t _OnHttpPostRecv(void* buffer, size_t size, size_t nmemb, curl_wrapper_s* pstCurlWrapper)
+static size_t _OnHttpPostRecv(const void* buffer, size_t size, size_t nmemb, const void* _pstCurlWrapper)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
 //  DBG("pstCurlWrapper=%p, size=%d, nmemb=%d\n", pstCurlWrapper, size, nmemb);
-
+    
     ASSERT(pstCurlWrapper->u32PostRecvCurr < pstCurlWrapper->u32PostRecvTotal, "u32PostRecvTotal %u, u32PostRecvCurr %u\n", pstCurlWrapper->u32PostRecvTotal, pstCurlWrapper->u32PostRecvCurr);
 
     size_t s32NeedCopy = size * nmemb;
@@ -298,12 +305,13 @@ static size_t _OnHttpPostRecv(void* buffer, size_t size, size_t nmemb, curl_wrap
     return s32NeedCopy;
 }
 
-static size_t _OnHttpPostProgress(curl_wrapper_s* pstCurlWrapper, double dltotal, double dlnow, double ultotal, double ulnow)
+static int _OnHttpPostProgress(const void* _pstCurlWrapper, double dltotal, double dlnow, double ultotal, double ulnow)
 {
+    curl_wrapper_s* pstCurlWrapper = (curl_wrapper_s*)_pstCurlWrapper;
 //  DBG("pstCurlWrapper=%p, dltotal=%f, dlnow=%f, ultotal=%f, ulnow=%f\n", pstCurlWrapper, dltotal, dlnow, ultotal, ulnow);
 //  DBG("bRunning=%d\n", pstCurlWrapper->bRunning);
 
-
+    
     //todo:why no using this func?
     if(pstCurlWrapper->bRunning == 0)
     {
@@ -484,7 +492,7 @@ int curl_wrapper_StartHttpPost(handle _hndCurlWrapper, char* _szUrl, unsigned ch
     curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_POST, 1L);
 //  curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_TIMEOUT, 5);
 //  curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_CONNECTTIMEOUT, 120);
-    curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_POSTFIELDS, pstCurlWrapper->pu8PostSend);
+    curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_POSTFIELDS, (void*)pstCurlWrapper->pu8PostSend);
     curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_POSTFIELDSIZE, pstCurlWrapper->u32PostSendCurr);
     curl_easy_setopt(pstCurlWrapper->pstCurl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)pstCurlWrapper->u32PostSendCurr);
 

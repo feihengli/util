@@ -44,7 +44,7 @@ void init_signals(void)
     signal(SIGPIPE, SIG_IGN);
 }
 
-int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
+int get_audio_frame_cb(unsigned char *frame, unsigned long len, double timestamp)
 {
     if (gHndMainFramePool)
     {
@@ -59,7 +59,7 @@ int get_audio_frame_cb(char *frame, unsigned long len, double timestamp)
     return 0;
 }
 
-int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type)
+int get_video_frame_cb(int stream, unsigned char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type)
 {
     FRAME_TYPE_E type = FRAME_TYPE_INVALID;
     if (encode_type == SAL_ENCODE_TYPE_H264)
@@ -83,7 +83,7 @@ int get_video_frame_cb(int stream, char *frame, unsigned long len, int key, doub
     return 0;
 }
 
-int get_jpeg_frame_cb(char *frame, int len)
+int get_jpeg_frame_cb(unsigned char *frame, int len)
 {
     return 0;
 }
@@ -119,9 +119,9 @@ int main(int argc, char** argv)
     memset(&video, 0, sizeof(video));
     video.cb = get_video_frame_cb;
     video.stream[0].enable = 1;
-    video.stream[0].width = 3840;
-    video.stream[0].height = 2160;
-    video.stream[0].framerate = 15;
+    video.stream[0].width = 1920; //3840;
+    video.stream[0].height = 1080; //2160;
+    video.stream[0].framerate = 30;
     video.stream[0].bitrate = 2500;
     video.stream[0].gop = 2 * video.stream[0].framerate;
     video.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
@@ -129,12 +129,12 @@ int main(int argc, char** argv)
 
     video.stream[1].enable = 1;
     video.stream[1].width = 640;
-    video.stream[1].height = 360;
-    video.stream[1].framerate = 15;
+    video.stream[1].height = 480;
+    video.stream[1].framerate = 30;
     video.stream[1].bitrate = 500;
     video.stream[1].gop = 2 * video.stream[1].framerate;
     video.stream[1].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
-    video.stream[1].encode_type = SAL_ENCODE_TYPE_H265;
+    video.stream[1].encode_type = SAL_ENCODE_TYPE_H264;
     ret = sal_sys_init(&video);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys video init done.\n");
@@ -154,16 +154,13 @@ int main(int argc, char** argv)
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
     DBG("sys audio init done.\n");
     
-    
-    //ret = sal_dr_init();
+    //extern int sal_pc_init();
+    //ret = sal_pc_init();
     //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-    
-   /* ret = sal_osd_init();
-    CHECK(ret == 0, -1, "Error with: %#x\n", ret);*/
+
 
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
-    
     
     while (!test_exit)
     {

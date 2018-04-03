@@ -19,7 +19,7 @@ extern "C"{
             pts 时间戳(us) 绝对时间
  返 回 值: 成功返回0,失败返回小于0
 */
-typedef int (*sal_audio_cb)(char *frame, unsigned long len, double pts);
+typedef int (*sal_audio_cb)(unsigned char *frame, unsigned long len, double pts);
 
 
 typedef struct sal_audio_s

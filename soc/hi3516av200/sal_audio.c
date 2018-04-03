@@ -520,7 +520,7 @@ static AUDIO_SOUND_MODE_E get_sound_mode()
     return enSoundmode;
 }
 
-static int aenc_write_cb(char *frame, unsigned long len, double pts)
+static int aenc_write_cb(unsigned char *frame, unsigned long len, double pts)
 {
     double timestamp = pts/1000;
 
@@ -641,7 +641,7 @@ static HI_VOID * audio_thread(void * pParam)
 
             if (stStream.u32Len > header_size)
             {
-                s32Ret = aenc_write_cb((HI_CHAR *)stStream.pStream+header_size, stStream.u32Len-header_size, stStream.u64TimeStamp);
+                s32Ret = aenc_write_cb(stStream.pStream+header_size, stStream.u32Len-header_size, stStream.u64TimeStamp);
                 CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
             }
 

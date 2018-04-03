@@ -94,6 +94,10 @@ typedef struct RTSP_SERVER_S
     int client_Aport[2]; //send rtp rtcp
     int server_Afd[2];
     int server_Aport[2]; //recv rtp rtcp
+    
+    //调用select的最后时间，用以控制调用间隔
+    struct timeval last_rw_tcp;
+    struct timeval last_rw_udp;
 }
 RTSP_SERVER_S;
 
@@ -1686,20 +1690,13 @@ void* rtsp_process(void* _pstSession)
     stRtspServer.bASupport = 0;
     CHECK(stRtspServer.bVSupport || stRtspServer.bASupport, NULL, "Error with: %#x %#x\n", stRtspServer.bVSupport, stRtspServer.bASupport);
     
+    int rw_time_interval = 0;
     char* data = NULL;
     int len = 0;
     while (pclient->running)
     {
-        if (stRtspServer.enStatus == RTSP_SERVER_STATUS_RTSP || stRtspServer.enStatus == RTSP_SERVER_STATUS_TEARDOWN)
+        if (stRtspServer.enStatus == RTSP_SERVER_STATUS_RTSP)
         {
-            u32ExpectTimeout = GENERAL_RWTIMEOUT;
-            u32Timeout = select_rtimeout(stRtspServer.hndSocket);
-            GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Read  Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-
-            u32ExpectTimeout = GENERAL_RWTIMEOUT;
-            u32Timeout = select_wtimeout(stRtspServer.hndSocket);
-            GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-
             do
             {
                 data = NULL;
@@ -1725,21 +1722,17 @@ void* rtsp_process(void* _pstSession)
 
             ret = select_rw(stRtspServer.hndSocket);
             GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
+            
+            u32ExpectTimeout = GENERAL_RWTIMEOUT;
+            u32Timeout = select_rtimeout(stRtspServer.hndSocket);
+            GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Read  Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
+
+            u32ExpectTimeout = GENERAL_RWTIMEOUT;
+            u32Timeout = select_wtimeout(stRtspServer.hndSocket);
+            GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
         }
         else if (stRtspServer.enStatus == RTSP_SERVER_STATUS_RTP)
         {
-            if (stRtspServer.enTranType == TRANS_TYPE_TCP)
-            {
-                u32ExpectTimeout = GENERAL_RWTIMEOUT;
-                u32Timeout = select_wtimeout(stRtspServer.hndSocket);
-                GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
-            }
-            else if (stRtspServer.enTranType == TRANS_TYPE_UDP)
-            {
-                ret = _RecvRtcpOverUdp(&stRtspServer);
-                GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
-            }
-
             do
             {
                 data = NULL;
@@ -1762,7 +1755,7 @@ void* rtsp_process(void* _pstSession)
                 }
             }
             while (data != NULL && pclient->running);
-
+            
             frame_info_s* frame = frame_pool_get(stRtspServer.hndReader);
             if (frame)
             {
@@ -1787,14 +1780,41 @@ void* rtsp_process(void* _pstSession)
             }
             else
             {
-                //WRN("Get AVframe failed\n");
-                //usleep(20*1000);
+                //WRN("failed to get AVframe\n");
+                usleep(1);
             }
+            
+            rw_time_interval = (stRtspServer.enTranType == TRANS_TYPE_TCP) ? 1 : 100;
+            u32Timeout = util_time_pass(&stRtspServer.last_rw_tcp);
+            if (u32Timeout > rw_time_interval)
+            {
+                ret = util_time_abs(&stRtspServer.last_rw_tcp);
+                GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
 
-            ret = select_rw(stRtspServer.hndSocket);
-            GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
+                ret = select_rw(stRtspServer.hndSocket);
+                GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
+            }
+            
+            if (stRtspServer.enTranType == TRANS_TYPE_TCP)
+            {
+                u32ExpectTimeout = GENERAL_RWTIMEOUT;
+                u32Timeout = select_wtimeout(stRtspServer.hndSocket);
+                GOTO(u32Timeout < u32ExpectTimeout, _EXIT, "Write Timeout %u, expect %u\n", u32Timeout, u32ExpectTimeout);
+            }
+            else if (stRtspServer.enTranType == TRANS_TYPE_UDP)
+            {
+                u32Timeout = util_time_pass(&stRtspServer.last_rw_udp);
+                if (u32Timeout > 100)
+                {
+                    ret = util_time_abs(&stRtspServer.last_rw_udp);
+                    GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
+
+                    ret = _RecvRtcpOverUdp(&stRtspServer);
+                    GOTO(ret == 0, _EXIT, "Error with: %#x\n", ret);
+                }
+            }
         }
-        else if (RTSP_SERVER_STATUS_ERROR == stRtspServer.enStatus)
+        else if (RTSP_SERVER_STATUS_ERROR == stRtspServer.enStatus || stRtspServer.enStatus == RTSP_SERVER_STATUS_TEARDOWN)
         {
             WRN("EXIT: RTSP ERROR\n");
             while (pclient->running && !select_wlist_empty(stRtspServer.hndSocket))

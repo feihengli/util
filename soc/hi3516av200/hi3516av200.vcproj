@@ -539,6 +539,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sal_manual_venc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\sal_md.h"
 				>
 			</File>
@@ -548,6 +552,10 @@
 			</File>
 			<File
 				RelativePath=".\sal_overlay.h"
+				>
+			</File>
+			<File
+				RelativePath=".\sal_pseudo_color.h"
 				>
 			</File>
 			<File
@@ -594,6 +602,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\001_colormap_hsv.c"
+				>
+			</File>
 			<File
 				RelativePath=".\driver\board_ctl.c"
 				>
@@ -707,6 +719,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sal_manual_venc.c"
+				>
+			</File>
+			<File
 				RelativePath=".\sal_md.c"
 				>
 			</File>
@@ -716,6 +732,10 @@
 			</File>
 			<File
 				RelativePath=".\sal_overlay.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sal_pseudo_color.c"
 				>
 			</File>
 			<File
