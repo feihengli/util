@@ -9,6 +9,10 @@ SRC += $(wildcard *.c)
 SRC += $(wildcard *.cpp)
 OBJS = $(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SRC)))
 
+all: __RM $(TARGET)
+__RM:
+	rm -f $(TARGET)
+	@echo
 $(TARGET): $(OBJS)
 	make -C $(PLATFORM)
 	@echo

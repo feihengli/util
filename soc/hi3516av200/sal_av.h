@@ -57,7 +57,7 @@ typedef struct sal_video_qp_s
 */
 typedef int (*sal_video_frame_cb)(int stream, unsigned char *frame, unsigned long len, int key, double pts, SAL_ENCODE_TYPE_E encode_type);
 
-typedef struct sal_video_s
+typedef struct _sal_video_s
 {
     sal_stream_s stream[2];
     sal_video_frame_cb cb;

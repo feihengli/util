@@ -10,10 +10,10 @@ typedef struct msg_s
     int inited;
     int msgid;
     long int type;
+    pthread_mutex_t mutex;
 }msg_s;
 
 static msg_s msg;
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 char* debug_time_str()
 {
@@ -44,7 +44,7 @@ static int debug_init()
     msgctl(msg.msgid, IPC_STAT, &buf);
     buf.msg_qbytes=32*1024;
     msgctl(msg.msgid, IPC_SET, &buf);
-    
+    pthread_mutex_init(&msg.mutex, NULL);
     msg.inited = 1;
 
     return 0;
@@ -52,12 +52,12 @@ static int debug_init()
 
 int debug_print(const char* format, ...)
 {
-    pthread_mutex_lock(&mutex);
-    
     if (!msg.inited)
     {
         debug_init();
     }
+    
+    pthread_mutex_lock(&msg.mutex);
     static Message send_buf;
     memset(&send_buf, 0, sizeof(send_buf));
     send_buf.type = msg.type;
@@ -74,7 +74,7 @@ int debug_print(const char* format, ...)
         msgctl(msg.msgid, IPC_RMID, 0);
         debug_init();
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&msg.mutex);
 
     return 0;
 }

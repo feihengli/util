@@ -16,6 +16,10 @@
 #include "sal_frame_pool.h"
 #include "sal_rtsp_server.h"
 #include "sal_draw_rectangle.h"
+#include "sal_himm.h"
+#include "sal_vi_vpss.h"
+#include "sal_vo.h"
+#include "sal_t01.h"
 
 static int test_exit = 0;
 
@@ -75,7 +79,7 @@ int get_video_frame_cb(int stream, unsigned char *frame, unsigned long len, int 
     {
         frame_pool_add(gHndMainFramePool, frame, len, type, key, pts);
     }
-    else if (stream == 1 && gHndSubFramePool)
+    else if (stream == 4 && gHndSubFramePool)
     {
         frame_pool_add(gHndSubFramePool, frame, len, type, key, pts);
     }
@@ -128,7 +132,7 @@ int main(int argc, char** argv)
     video.stream[0].encode_type = SAL_ENCODE_TYPE_H265;
 
     video.stream[1].enable = 1;
-    video.stream[1].width = 640;
+    video.stream[1].width = 720;
     video.stream[1].height = 480;
     video.stream[1].framerate = 30;
     video.stream[1].bitrate = 500;
@@ -140,7 +144,7 @@ int main(int argc, char** argv)
     DBG("sys video init done.\n");
 
     //config of audio
-    sal_audio_s audio;
+    /*sal_audio_s audio;
     memset(&audio, 0, sizeof(audio));
     audio.enable = 1;
     strcpy(audio.encType, "G.711A");
@@ -152,21 +156,52 @@ int main(int argc, char** argv)
     audio.cb = get_audio_frame_cb;
     ret = sal_audio_init(&audio);
     CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-    DBG("sys audio init done.\n");
+    DBG("sys audio init done.\n");*/
     
     //extern int sal_pc_init();
     //ret = sal_pc_init();
     //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
-
+    
+    //sal_video_s video1;
+    //memset(&video1, 0, sizeof(video1));
+    //video1.cb = get_video_frame_cb;
+    //video1.stream[0].enable = 1;
+    //video1.stream[0].width = 720; //3840;
+    //video1.stream[0].height = 480; //2160;
+    //video1.stream[0].framerate = 30;
+    //video1.stream[0].bitrate = 1000;
+    //video1.stream[0].gop = 1 * video1.stream[0].framerate;
+    //video1.stream[0].bitrate_ctl = SAL_BITRATE_CONTROL_CBR;
+    //video1.stream[0].encode_type = SAL_ENCODE_TYPE_H265;
+    //
+    //extern int sal_sys_init1(sal_video_s* video);
+    //ret = sal_sys_init1(&video1);
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    //DBG("sys video1 init done.\n");
+    
+    ret = vo_init();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    DBG("vo init done.\n");
+    
+    ret = sal_t01_init();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    DBG("t01 init done.\n");
+    
+    ret = sal_vv_init();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    DBG("sal_vv_init done.\n");
 
     handle hndRtsps = rtsps_init(554);
     CHECK(hndRtsps, -1, "Error with: %#x\n", hndRtsps);
-    
+
     while (!test_exit)
     {
         usleep(1);
     }
     
+    sal_vv_exit();
+    sal_t01_exit();
+    vo_exit();
 
     rtsps_destroy(hndRtsps);
     sal_audio_exit();

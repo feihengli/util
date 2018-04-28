@@ -72,6 +72,7 @@ extern "C"{
 
 typedef enum sample_vi_mode_e
 {
+    SENSOR_INVALID = -1,
     APTINA_AR0130_DC_720P_30FPS = 0,
     APTINA_9M034_DC_720P_30FPS,
     APTINA_AR0230_HISPI_1080P_30FPS,
@@ -96,6 +97,7 @@ typedef enum sample_vi_mode_e
     SAMPLE_VI_MODE_1_D1,
     SAMPLE_VI_MODE_BT1120_720P,
     SAMPLE_VI_MODE_BT1120_1080P,
+    SENSOR_VIRTUAL,
 }SAMPLE_VI_MODE_E;
 
 

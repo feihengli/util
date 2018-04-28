@@ -572,6 +572,7 @@ static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
     int ret = -1;
     struct timeval pre_time = {0, 0};
     util_time_abs(&pre_time);
+    int timeout = 4000;
 
     if (NULL == _pstRtspServer->hndReader)
     {
@@ -583,7 +584,7 @@ static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
             do
             {
                 int pass_time = util_time_pass(&pre_time);
-                CHECK(pass_time < 2000, -1, "frame_pool_register time out with: %d\n", pass_time);
+                CHECK(pass_time < timeout, -1, "frame_pool_register time out with: %d\n", pass_time);
 
                 _pstRtspServer->hndReader = frame_pool_register(gHndMainFramePool, 0);
                 usleep(20*1000);
@@ -599,7 +600,7 @@ static int _InitResource(RTSP_SERVER_S* _pstRtspServer, int _bIsMainStream)
             do
             {
                 int pass_time = util_time_pass(&pre_time);
-                CHECK(pass_time < 2000, -1, "frame_pool_register time out with: %d\n", pass_time);
+                CHECK(pass_time < timeout, -1, "frame_pool_register time out with: %d\n", pass_time);
                 
                 _pstRtspServer->hndReader = frame_pool_register(gHndSubFramePool, 0);
                 usleep(20*1000);

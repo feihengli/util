@@ -36,6 +36,10 @@ rm -rf iptables-1.4.21
 rm -rf ethtool
 rm -rf ethtool-4.15
 
+#mkfs.fat
+rm -rf mkfs.fat
+rm -rf dosfstools-4.1
+
 rm -rf *.a
 
 

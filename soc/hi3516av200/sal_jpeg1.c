@@ -5,7 +5,7 @@
 #include "hi_comm.h"
 #include "sal_config.h"
 
-#define JPEG1_LOCAL_TEST 1
+#define JPEG1_LOCAL_TEST 0
 
 int jpeg1_create_chn(int channel, int widht, int height)
 {

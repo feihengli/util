@@ -55,492 +55,55 @@ sal_av_args;
 
 static sal_av_args* g_av_args = NULL;
 
-static VI_DEV_ATTR_S DEV_ATTR_MIPI_BASE =
+static VI_DEV_ATTR_S gst_videv_attr =
 {
     /* interface mode */
-    VI_MODE_MIPI,
+    VI_MODE_DIGITAL_CAMERA,
     /* multiplex mode */
     VI_WORK_MODE_1Multiplex,
     /* r_mask    g_mask    b_mask*/
-    {0xFFF00000,    0x0},
+    {0x3FFF0000,    0x0},
     /* progessive or interleaving */
     VI_SCAN_PROGRESSIVE,
     /*AdChnId*/
-    {-1, -1, -1, -1},
+    { -1, -1, -1, -1},
     /*enDataSeq, only support yuv*/
-    VI_INPUT_DATA_YUYV,
-
+    VI_INPUT_DATA_YVYU,
     /* synchronization information */
     {
-    /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-    VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_VALID_SINGAL,VI_VSYNC_VALID_NEG_HIGH,
-
-    /*hsync_hfb    hsync_act    hsync_hhb*/
-    {0,            1280,        0,
-    /*vsync0_vhb vsync0_act vsync0_hhb*/
-     0,            720,        0,
-    /*vsync1_vhb vsync1_act vsync1_hhb*/
-     0,            0,            0}
-    },
-    /* use interior ISP */
-    VI_PATH_ISP,
-    /* input data type */
-    VI_DATA_TYPE_RGB,
-    /* bRever */
-    HI_FALSE,
-    /* DEV CROP */
-    {0, 0, 1920, 1080},
-    {
-        {
-            {1920, 1080},
-            HI_FALSE,
-        },
-        {
-            VI_REPHASE_MODE_NONE,
-            VI_REPHASE_MODE_NONE
-        }
-    }
-};
-
-static VI_DEV_ATTR_EX_S DEV_ATTR_LVDS_BASE_EX =
-{
-    /* interface mode */
-    VI_INPUT_MODE_LVDS,
-    /* multiplex mode */
-    VI_WORK_MODE_1Multiplex,
-    VI_COMBINE_COMPOSITE,
-    VI_COMP_MODE_SINGLE,
-    VI_CLK_EDGE_SINGLE_DOWN,
-    /* r_mask    g_mask    b_mask*/
-    {0xFFF00000,    0x0},
-    /* progessive or interleaving */
-    VI_SCAN_PROGRESSIVE,
-    /*AdChnId*/
-    {-1, -1, -1, -1},
-    /*enDataSeq, only support yuv*/
-    VI_INPUT_DATA_YUYV,
-
-    /* synchronization information */
-    {
-    /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-    VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_VALID_SINGAL,VI_VSYNC_VALID_NEG_HIGH,
-
-    /*hsync_hfb    hsync_act    hsync_hhb*/
-    {0,            1920,        0,
-    /*vsync0_vhb vsync0_act vsync0_hhb*/
-     0,            1080,        0,
-    /*vsync1_vhb vsync1_act vsync1_hhb*/
-     0,            0,            0}
-    },
-
-    {BT656_FIXCODE_1, BT656_FIELD_POLAR_STD},
-    /* use interior ISP */
-    VI_PATH_ISP,
-    /* input data type */
-    VI_DATA_TYPE_RGB,
-    /* bRever */
-    HI_FALSE,
-    /* DEV CROP */
-    {0, 30, 1920, 1080}
-};
-
-static VI_DEV_ATTR_S DEV_ATTR_LVDS_BASE =
-{
-    /* interface mode */
-    VI_MODE_LVDS,
-    /* multiplex mode */
-    VI_WORK_MODE_1Multiplex,
-    /* r_mask    g_mask    b_mask*/
-        {0xFFF00000,    0x0},
-        /* progessive or interleaving */
-        VI_SCAN_PROGRESSIVE,
-        /*AdChnId*/
-        { -1, -1, -1, -1},
-        /*enDataSeq, only support yuv*/
-        VI_INPUT_DATA_YUYV,
-
-        /* synchronization information */
-        {
         /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-        VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL, VI_HSYNC_NEG_HIGH, VI_VSYNC_VALID_SINGAL, VI_VSYNC_VALID_NEG_HIGH,
+        VI_VSYNC_FIELD, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL, VI_HSYNC_NEG_HIGH, VI_VSYNC_VALID_SINGAL, VI_VSYNC_VALID_NEG_HIGH,
 
             /*hsync_hfb    hsync_act    hsync_hhb*/
-            {
-            0,            1280,        0,
+        {
+            0,            720,        0,
                 /*vsync0_vhb vsync0_act vsync0_hhb*/
-                0,            720,        0,
+                0,            480,        0,
                 /*vsync1_vhb vsync1_act vsync1_hhb*/
-                0,            0,            0
-            }
-        },
-            /* use interior ISP */
-            VI_PATH_ISP,
-            /* input data type */
-            VI_DATA_TYPE_RGB,
-            /* bRever */
-            HI_FALSE,
-            /* DEV CROP */
-            {0, 0, 1920, 1080},
-            {
-                {
-                    {1920, 1080},
-                        HI_FALSE,
-
-                },
-                {
-                VI_REPHASE_MODE_NONE,
-                    VI_REPHASE_MODE_NONE
-                    }
-            }
-};
-
-/*9M034 DC 12bit输入720P@30fps*/
-static VI_DEV_ATTR_S DEV_ATTR_AR0130_DC_720P_BASE =
-{
-    /*接口模式*/
-    VI_MODE_DIGITAL_CAMERA,
-    /*1、2、4路工作模式*/
-    VI_WORK_MODE_1Multiplex,
-    /* r_mask    g_mask    b_mask*/
-    {0xFFF0000,    0x0},
-    /*逐行or隔行输入*/
-    VI_SCAN_PROGRESSIVE,
-    /*AdChnId*/
-    {-1, -1, -1, -1},
-    /*enDataSeq, 仅支持YUV格式*/
-    VI_INPUT_DATA_YUYV,
-
-    /*同步信息，对应reg手册的如下配置, --bt1120时序无效*/
-    {
-    /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-    VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_VALID_SINGAL,VI_VSYNC_VALID_NEG_HIGH,
-
-    /*timing信息，对应reg手册的如下配置*/
-    /*hsync_hfb    hsync_act    hsync_hhb*/
-    {370,            1280,        0,
-    /*vsync0_vhb vsync0_act vsync0_hhb*/
-     6,            720,        6,
-    /*vsync1_vhb vsync1_act vsync1_hhb*/
-     0,            0,            0}
-    },
-    /*使用内部ISP*/
-    VI_PATH_ISP,
-    /*输入数据类型*/
-    VI_DATA_TYPE_RGB,
-    /* Data Reverse */
-    HI_FALSE,
-    {0, 0, 1280, 720}
-};
-
-/* DC 12bit输入*/
-VI_DEV_ATTR_S DEV_ATTR_DC_BASE =
-{
-    /* interface mode */
-    VI_MODE_DIGITAL_CAMERA,
-    /* multiplex mode */
-    VI_WORK_MODE_1Multiplex,
-    /* r_mask    g_mask    b_mask*/
-    {0xFFF0000,    0x0},
-    /* progessive or interleaving */
-    VI_SCAN_PROGRESSIVE,
-    /*AdChnId*/
-    {-1, -1, -1, -1},
-    /*enDataSeq, only support yuv*/
-    VI_INPUT_DATA_YUYV,
-
-     /* synchronization information */
-    {
-    /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-    VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_VALID_SINGAL,VI_VSYNC_VALID_NEG_HIGH,
-
-    /*hsync_hfb    hsync_act    hsync_hhb*/
-    {0,            1920,        0,
-    /*vsync0_vhb vsync0_act vsync0_hhb*/
-     0,            1080,        0,
-    /*vsync1_vhb vsync1_act vsync1_hhb*/
-     0,            0,            0}
-    },
-    /* use interior ISP */
-    VI_PATH_ISP,
-    /* input data type */
-    VI_DATA_TYPE_RGB,
-    /* bRevert */
-    HI_FALSE,
-    /* stDevRect */
-    {200, 20, 1920, 1080}
-};
-
-static VI_DEV_ATTR_EX_S DEV_ATTR_DC_BASE_EX =
-{
-    /* interface mode */
-    VI_INPUT_MODE_DIGITAL_CAMERA,
-    /* multiplex mode */
-    VI_WORK_MODE_1Multiplex,
-    VI_COMBINE_COMPOSITE,
-    VI_COMP_MODE_SINGLE,
-    VI_CLK_EDGE_SINGLE_DOWN,
-    /* r_mask    g_mask    b_mask*/
-    {0xFFF0000,    0x0},
-    /* progessive or interleaving */
-    VI_SCAN_PROGRESSIVE,
-    /*AdChnId*/
-    {-1, -1, -1, -1},
-    /*enDataSeq, only support yuv*/
-    VI_INPUT_DATA_YUYV,
-
-    /* synchronization information */
-    {
-    /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-    VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_VALID_SINGAL,VI_VSYNC_VALID_NEG_HIGH,
-
-    /*hsync_hfb    hsync_act    hsync_hhb*/
-    {0,            1920,        0,
-    /*vsync0_vhb vsync0_act vsync0_hhb*/
-     0,            1080,        0,
-    /*vsync1_vhb vsync1_act vsync1_hhb*/
-     0,            0,            0}
-    },
-
-    {BT656_FIXCODE_1, BT656_FIELD_POLAR_STD},
-    /* use interior ISP */
-    VI_PATH_ISP,
-    /* input data type */
-    VI_DATA_TYPE_RGB,
-    /* bRever */
-    HI_FALSE,
-    /* DEV CROP */
-    {0, 0, 1920, 1080}
-};
-
-/*8M outout*/
-VI_DEV_ATTR_S DEV_ATTR_IMX274_MIPI_12BIT_4K =
-{
-    /*接口模式*/
-    VI_MODE_MIPI,
-    /*1、2、4路工作模式*/
-    VI_WORK_MODE_1Multiplex,
-    /* r_mask    g_mask    b_mask*/
-    {0xFFF00000,    0x0},
-    /*逐行or隔行输入*/
-    VI_SCAN_PROGRESSIVE,
-    /*AdChnId*/
-    { -1, -1, -1, -1},
-    /*enDataSeq, 仅支持YUV格式*/
-    VI_INPUT_DATA_YUYV,
-
-    /*同步信息，对应reg手册的如下配置, --bt1120时序无效*/
-    {
-        /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-        VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL, VI_HSYNC_NEG_HIGH, VI_VSYNC_VALID_SINGAL, VI_VSYNC_VALID_NEG_HIGH,
-            //VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_NORM_PULSE,VI_VSYNC_VALID_NEG_HIGH,
-
-            /*timing信息，对应reg手册的如下配置*/
-            /*hsync_hfb    hsync_act    hsync_hhb*/
-        {0,            3840,        0,
-        /*vsync0_vhb vsync0_act vsync0_hhb*/
-        0,            2160,        0,
-        /*vsync1_vhb vsync1_act vsync1_hhb*/
-        0,            0,            0}
-    },
-        /*使用内部ISP*/
-        VI_PATH_ISP,
-        /*输入数据类型*/
-        VI_DATA_TYPE_RGB,
-        /* bRever */
-        HI_FALSE,
-        /* stDevRect */
-    {12, 40, 3840, 2160},
-    /*stBasAttr*/
-    {
-        {/*stSacleAttr*/
-            {3840, 2160},
-                HI_FALSE,
-
-        },
-        {/*stRephaseAttr*/
-            VI_REPHASE_MODE_NONE,
-                VI_REPHASE_MODE_NONE
-            }
-    }
-};
-
-/*8M outout*/
-VI_DEV_ATTR_S DEV_ATTR_IMX274_MIPI_12BIT_4K_WDR =
-{
-    /*接口模式*/
-    VI_MODE_MIPI,
-    /*1、2、4路工作模式*/
-    VI_WORK_MODE_1Multiplex,
-    /* r_mask    g_mask    b_mask*/
-    {0xFFC00000,    0x0},
-    /*逐行or隔行输入*/
-    VI_SCAN_PROGRESSIVE,
-    /*AdChnId*/
-    { -1, -1, -1, -1},
-    /*enDataSeq, 仅支持YUV格式*/
-    VI_INPUT_DATA_YUYV,
-
-    /*同步信息，对应reg手册的如下配置, --bt1120时序无效*/
-    {
-        /*port_vsync   port_vsync_neg     port_hsync        port_hsync_neg        */
-        VI_VSYNC_PULSE, VI_VSYNC_NEG_LOW, VI_HSYNC_VALID_SINGNAL, VI_HSYNC_NEG_HIGH, VI_VSYNC_VALID_SINGAL, VI_VSYNC_VALID_NEG_HIGH,
-            //VI_VSYNC_PULSE, VI_VSYNC_NEG_HIGH, VI_HSYNC_VALID_SINGNAL,VI_HSYNC_NEG_HIGH,VI_VSYNC_NORM_PULSE,VI_VSYNC_VALID_NEG_HIGH,
-
-            /*timing信息，对应reg手册的如下配置*/
-            /*hsync_hfb    hsync_act    hsync_hhb*/
-        {0,            3840,        0,
-        /*vsync0_vhb vsync0_act vsync0_hhb*/
-        0,            2160,        0,
-        /*vsync1_vhb vsync1_act vsync1_hhb*/
-        0,            0,            0}
-    },
-        /*使用内部ISP*/
-        VI_PATH_ISP,
-        /*输入数据类型*/
-        VI_DATA_TYPE_RGB,
-        /* bRever */
-        HI_FALSE,
-        /* stDevRect */
-    {12, 18, 3840, 2160},
-    /*stBasAttr*/
-    {
-        {/*stSacleAttr*/
-            {3840, 2160},
-                HI_FALSE,
-
-        },
-        {/*stRephaseAttr*/
-            VI_REPHASE_MODE_NONE,
-                VI_REPHASE_MODE_NONE
-            }
-    }
-};
-
-static combo_dev_attr_t LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR = 
-    {
-    .devno = 0,
-    .input_mode = INPUT_MODE_LVDS,
-    .phy_clk_share = PHY_CLK_SHARE_PHY0,
-    .img_rect = {132, 40, 4000, 3000},
-    .lvds_attr = 
-        {
-        .raw_data_type    = RAW_DATA_12BIT,
-        .wdr_mode         = HI_WDR_MODE_NONE,
-        .sync_mode        = LVDS_SYNC_MODE_SAV,
-        .vsync_type       = {LVDS_VSYNC_NORMAL, 0, 0},
-        .fid_type         = {LVDS_FID_NONE, HI_TRUE},
-        .data_endian      = LVDS_ENDIAN_BIG,
-        .sync_code_endian = LVDS_ENDIAN_BIG,
-        //.lane_id = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1},
-        .lane_id = {0, 1, 2, 4, 5, 7, 8, 9, 3, 6, -1, -1},
-        .sync_code = 
-            {
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane 0
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane 1
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane2
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane3
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane4
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane5
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane6
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane7
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane8
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-                {{0xab0, 0xb60, 0x800, 0x9d0},      // lane9
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}, 
-                {0xab0, 0xb60, 0x800, 0x9d0}},
-            }
+                0,            0,        0
         }
-    };
-
-combo_dev_attr_t  DEV_COMBO_IMX274_MIPI_12BIT_4K = 
-{
-    .devno = 0,
-    .input_mode = INPUT_MODE_MIPI,
-    //.phy_clk_share = PHY_CLK_SHARE_NONE,
-    .img_rect = {0, 0, 3864, 2218},
-
-    .mipi_attr =
+    },
+        /* ISP bypass */
+        VI_PATH_ISP,
+        /* input data type */
+        VI_DATA_TYPE_RGB,
+        /* bReverse */
+        HI_FALSE,
+        /* DEV CROP */
+    {0, 0, 720, 480},
     {
-        .raw_data_type = RAW_DATA_12BIT,
-        .wdr_mode = HI_MIPI_WDR_MODE_NONE,
-        .lane_id = {0, 1, 2, 3, -1, -1, -1, -1}
+        {
+            {720, 480},
+                HI_FALSE,
+        },
+        {
+            VI_REPHASE_MODE_NONE,
+                VI_REPHASE_MODE_NONE
+            }
     }
 };
 
-combo_dev_attr_t DEV_COMBO_IMX274_MIPI_12BIT_4K_WDR = 
-{
-    .devno = 0,
-    .input_mode = INPUT_MODE_MIPI,
-    //.phy_clk_share = PHY_CLK_SHARE_NONE,
-    //.img_rect = {0, 0, 3864, 2182},
-    .img_rect = {0, 0, 3864, 2182},
-
-    .mipi_attr =
-    {
-        .raw_data_type = RAW_DATA_10BIT,
-        .wdr_mode = HI_MIPI_WDR_MODE_DOL,
-        .lane_id = {0, 1, 2, 3, -1, -1, -1, -1}
-    }
-};
-
-combo_dev_attr_t MIPI_4lane_SENSOR_IMX327_1080P_12BIT_NOWDR_ATTR =
-{
-    .devno         = 0,
-    .input_mode    = INPUT_MODE_MIPI,      /* input mode */
-    .phy_clk_share = PHY_CLK_SHARE_NONE,
-    .img_rect = {0, 0, 1920, 1080},
-
-    .mipi_attr =
-    {
-        .raw_data_type = RAW_DATA_12BIT,
-        .wdr_mode      = HI_WDR_MODE_NONE,
-        .lane_id       = {0, 1, 2, 3, -1, -1, -1, -1}
-    }
-};
-
-combo_dev_attr_t MIPI_4lane_SENSOR_IMX327_1080P_10BIT_2WDR1_ATTR = 
-{
-    .devno = 0,
-    .input_mode = INPUT_MODE_MIPI,
-    .phy_clk_share = PHY_CLK_SHARE_NONE,
-    .img_rect = {0, 0, 1920, 1080},
-
-    .mipi_attr =    
-    {
-        .raw_data_type = RAW_DATA_10BIT,
-        .wdr_mode = HI_MIPI_WDR_MODE_DOL,
-        .lane_id = {0, 1, 2, 3, -1, -1, -1, -1}
-    }
-};
-
-combo_dev_attr_t CMOS_SENSOR_VIRTUAL_D1_ATTR =
+static combo_dev_attr_t CMOS_SENSOR_VIRTUAL_D1_ATTR =
 {
     .devno		   = 1,
     .input_mode    = INPUT_MODE_CMOS,	   /* input mode */
@@ -554,15 +117,7 @@ combo_dev_attr_t CMOS_SENSOR_VIRTUAL_D1_ATTR =
 
 static ISP_SNS_OBJ_S* g_pstSnsObj[2] =
 {
-#if defined(SNS_IMX274_MIPI_SINGLE)
-    &stSnsImx274Obj, NULL
-#elif defined(SNS_IMX327_MIPI_SINGLE)
-    &stSnsImx327Obj, NULL
-#elif defined(SNS_IMX327_MIPI__SENSOR_VIRTUAL)
-    &stSnsImx327Obj, &stSnsVirtualObj
-#else
-    NULL, NULL
-#endif
+    NULL, &stSnsVirtualObj
 };
 
 static int sys_vb_size(int width, int height, int align_width)
@@ -616,7 +171,7 @@ static int sys_vb_init()
         {
             sal_stream_s* stream = &g_av_args->video.stream[i];
             stVbConf.astCommPool[i].u32BlkSize = sys_vb_size(stream->width, stream->height, align_width);
-            stVbConf.astCommPool[i].u32BlkCnt = 10;
+            stVbConf.astCommPool[i].u32BlkCnt = 3;
 
             if (!g_av_args->ext_chn_enable && g_av_args->video.rotate)
                 stVbConf.astCommPool[i].u32BlkCnt += 2;
@@ -651,12 +206,6 @@ static int sys_vb_init()
         stVbConf.astCommPool[i].u32BlkCnt = (g_av_args->video.rotate) ? 2 : 1;
         i++;
     }
-    if (1)
-    {
-        stVbConf.astCommPool[i].u32BlkSize = sys_vb_size(720, 480, align_width);
-        stVbConf.astCommPool[i].u32BlkCnt = 3;
-        i++;
-    }
 
     s32Ret = sys_init(&stVbConf, align_width);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
@@ -675,93 +224,7 @@ static int vi_set_mipi(SAMPLE_VI_CONFIG_S* pstViConfig)
     fd = open("/dev/hi_mipi", O_RDWR);
     CHECK(fd >= 0, HI_FAILURE, "failed to open hi_mipi dev[/dev/hi_mipi]: %s.\n", strerror(errno));
 
-    if (pstViConfig->enViMode == OMNIVISION_OV9732_MIPI_720P_30FPS
-        || pstViConfig->enViMode == OMNIVISION_OV2710_MIPI_1080P_30FPS)
-    {
-        stcomboDevAttr.input_mode = INPUT_MODE_MIPI;
-        stcomboDevAttr.mipi_attr.raw_data_type = RAW_DATA_12BIT;
-        short lane_id[MIPI_LANE_NUM] = {0, -1, -1, -1, -1, -1, -1, -1};
-        memcpy(stcomboDevAttr.mipi_attr.lane_id, lane_id, sizeof(lane_id));
-    }
-    //else if (pstViConfig->enViMode == APTINA_AR0130_DC_720P_30FPS
-    //    || pstViConfig->enViMode == SONY_IMX323_DC_1080P_30FPS
-    //    || pstViConfig->enViMode == SMARTSENS_SC1135_DC_960P_30FPS
-    //    || pstViConfig->enViMode == APTINA_AR0237_DC_1080P_30FPS
-    //    || pstViConfig->enViMode == SMARTSENS_SC2135_DC_1080P_30FPS)
-    //{
-    //    memset(&stcomboDevAttr, 0, sizeof(stcomboDevAttr));
-    //    stcomboDevAttr.input_mode = INPUT_MODE_CMOS_33V;
-    //}
-    else if (pstViConfig->enViMode == SONY_IMX291_LVDS_1080P_30FPS)
-    {
-        stcomboDevAttr.input_mode = INPUT_MODE_SUBLVDS;
-        stcomboDevAttr.lvds_attr.raw_data_type = RAW_DATA_12BIT;
-        stcomboDevAttr.lvds_attr.sync_mode = LVDS_SYNC_MODE_SAV;
-        stcomboDevAttr.lvds_attr.sync_code_endian = LVDS_ENDIAN_BIG;
-        stcomboDevAttr.lvds_attr.data_endian = LVDS_ENDIAN_BIG;
-        //stcomboDevAttr.lvds_attr.img_size.width = g_av_args->vi_width;
-        //stcomboDevAttr.lvds_attr.img_size.height = g_av_args->vi_height;
-
-        short lane_id[LVDS_LANE_NUM]= {0, 1, 2, 3, -1, -1, -1, -1};
-        memcpy(stcomboDevAttr.lvds_attr.lane_id, lane_id, sizeof(lane_id));
-
-        unsigned short sync_code[LVDS_LANE_NUM][WDR_VC_NUM][SYNC_CODE_NUM] =
-        {
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-            {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        };
-        memcpy(stcomboDevAttr.lvds_attr.sync_code, sync_code, sizeof(sync_code));
-    }
-    else if (pstViConfig->enViMode == SONY_IMX226_LVDS_12M_30FPS)
-    {
-        //stcomboDevAttr.input_mode = INPUT_MODE_LVDS;
-        //stcomboDevAttr.lvds_attr.raw_data_type = RAW_DATA_12BIT;
-        //stcomboDevAttr.lvds_attr.sync_mode = LVDS_SYNC_MODE_SAV;
-        //stcomboDevAttr.lvds_attr.sync_code_endian = LVDS_ENDIAN_BIG;
-        //stcomboDevAttr.lvds_attr.data_endian = LVDS_ENDIAN_BIG;
-        ////stcomboDevAttr.lvds_attr.img_size.width = g_av_args->vi_width;
-        ////stcomboDevAttr.lvds_attr.img_size.height = g_av_args->vi_height;
-
-        //short lane_id[LVDS_LANE_NUM]= {0, 1, 2, 3, -1, -1, -1, -1};
-        //memcpy(stcomboDevAttr.lvds_attr.lane_id, lane_id, sizeof(lane_id));
-
-        //unsigned short sync_code[LVDS_LANE_NUM][WDR_VC_NUM][SYNC_CODE_NUM] =
-        //    {
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //        {{0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}, {0xab0, 0xb60, 0x800, 0x9d0}},
-        //    };
-        //memcpy(stcomboDevAttr.lvds_attr.sync_code, sync_code, sizeof(sync_code));
-        memcpy(&stcomboDevAttr, &LVDS_10lane_SENSOR_IMX226_12BIT_12M_NOWDR_ATTR, sizeof(stcomboDevAttr));
-    }
-    else if (pstViConfig->enViMode == SONY_IMX274_MIPI_8M_30FPS)
-    {
-        memcpy(&stcomboDevAttr, &DEV_COMBO_IMX274_MIPI_12BIT_4K, sizeof(stcomboDevAttr));
-        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
-        {
-            memcpy(&stcomboDevAttr, &DEV_COMBO_IMX274_MIPI_12BIT_4K_WDR, sizeof(stcomboDevAttr));
-        }
-    }
-    else if (pstViConfig->enViMode == SONY_IMX327_MIPI_1080P_30FPS)
-    {
-        memcpy(&stcomboDevAttr, &MIPI_4lane_SENSOR_IMX327_1080P_12BIT_NOWDR_ATTR, sizeof(stcomboDevAttr));
-        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
-        {
-            memcpy(&stcomboDevAttr, &MIPI_4lane_SENSOR_IMX327_1080P_10BIT_2WDR1_ATTR, sizeof(stcomboDevAttr));
-        }
-    }
-    else if (pstViConfig->enViMode == SENSOR_VIRTUAL)
+    if (pstViConfig->enViMode == SENSOR_VIRTUAL)
     {
         memcpy(&stcomboDevAttr, &CMOS_SENSOR_VIRTUAL_D1_ATTR, sizeof(stcomboDevAttr));
     }
@@ -821,55 +284,9 @@ static int vi_set_dev(VI_DEV ViDev, ISP_DEV IspDev, SAMPLE_VI_CONFIG_S* pstViCon
     memset(&stViDevAttrEx,0,sizeof(stViDevAttrEx));
     
     SAMPLE_VI_MODE_E sensor_type = g_av_args->sensor_type;
-    if (sensor_type == APTINA_AR0130_DC_720P_30FPS)
+    if (sensor_type == SENSOR_VIRTUAL)
     {
-        memcpy(&stViDevAttr,&DEV_ATTR_AR0130_DC_720P_BASE,sizeof(stViDevAttr));
-    }
-    else if (sensor_type == OMNIVISION_OV9732_MIPI_720P_30FPS
-            || sensor_type == OMNIVISION_OV2710_MIPI_1080P_30FPS)
-    {
-        memcpy(&stViDevAttr,&DEV_ATTR_MIPI_BASE,sizeof(stViDevAttr));
-    }
-    else if (sensor_type == SONY_IMX291_LVDS_1080P_30FPS)
-    {
-        bATTR_EX = HI_TRUE;
-        memcpy(&stViDevAttrEx, &DEV_ATTR_LVDS_BASE_EX, sizeof(stViDevAttrEx));
-    }
-    else if (sensor_type == SONY_IMX323_DC_1080P_30FPS)
-    {
-        memcpy(&stViDevAttr,&DEV_ATTR_DC_BASE, sizeof(stViDevAttr));
-    }
-    else if ((sensor_type == SMARTSENS_SC1135_DC_960P_30FPS)
-            || (sensor_type == SMARTSENS_SC2135_DC_1080P_30FPS))
-    {
-        bATTR_EX = HI_TRUE;
-        memcpy(&stViDevAttrEx,&DEV_ATTR_DC_BASE_EX, sizeof(stViDevAttrEx));
-        stViDevAttrEx.stSynCfg.enVsyncValid = VI_VSYNC_NORM_PULSE;
-    }
-    else if (sensor_type == APTINA_AR0237_DC_1080P_30FPS)
-    {
-        bATTR_EX = HI_TRUE;
-        memcpy(&stViDevAttrEx,&DEV_ATTR_DC_BASE_EX, sizeof(stViDevAttrEx));
-    }
-    else if (sensor_type == SONY_IMX226_LVDS_12M_30FPS)
-    {
-        memcpy(&stViDevAttr, &DEV_ATTR_LVDS_BASE, sizeof(stViDevAttr));
-    }
-    else if (sensor_type == SONY_IMX274_MIPI_8M_30FPS)
-    {
-        memcpy(&stViDevAttr, &DEV_ATTR_IMX274_MIPI_12BIT_4K, sizeof(stViDevAttr));
-        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
-        {
-            memcpy(&stViDevAttr, &DEV_ATTR_IMX274_MIPI_12BIT_4K_WDR, sizeof(stViDevAttr));
-        }
-    }
-    else if (sensor_type == SONY_IMX327_MIPI_1080P_30FPS)
-    {
-        memcpy(&stViDevAttr, &DEV_ATTR_MIPI_BASE, sizeof(stViDevAttr));
-        if (pstViConfig->enWDRMode != WDR_MODE_NONE)
-        {
-            memcpy(&stViDevAttr, &DEV_ATTR_MIPI_BASE, sizeof(stViDevAttr));
-        }
+        memcpy(&stViDevAttr, &gst_videv_attr, sizeof(stViDevAttr));
     }
     else
     {
@@ -1018,10 +435,10 @@ static int isp_init(ISP_DEV IspDev, WDR_MODE_E  enWDRMode)
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
     
     /* 2. register hisi ae lib */
-    stLib.s32Id = IspDev;
-    strcpy(stLib.acLibName, HI_AE_LIB_NAME);
-    s32Ret = HI_MPI_AE_Register(IspDev, &stLib);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    //stLib.s32Id = IspDev;
+    //strcpy(stLib.acLibName, HI_AE_LIB_NAME);
+    //s32Ret = HI_MPI_AE_Register(IspDev, &stLib);
+    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     /* 3. register hisi awb lib */
     stLib.s32Id = IspDev;
@@ -1080,6 +497,10 @@ static int isp_init(ISP_DEV IspDev, WDR_MODE_E  enWDRMode)
         stPubAttr.enBayer = BAYER_RGGB;
     }
     else if (sensor_type == SONY_IMX327_MIPI_1080P_30FPS)
+    {
+        stPubAttr.enBayer = BAYER_RGGB;
+    }
+    else if (sensor_type == SENSOR_VIRTUAL)
     {
         stPubAttr.enBayer = BAYER_RGGB;
     }
@@ -1282,8 +703,8 @@ static int vpss_start(VI_DEV ViDev, VPSS_GRP VpssGrp)
     s32Ret = vpss_set_group(VpssGrp, &stVpssGrpAttr);
     CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
-    //s32Ret = vpss_bind_vi(ViDev, VpssGrp);
-    //CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
+    s32Ret = vpss_bind_vi(ViDev, VpssGrp);
+    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
 
     return 0;
 }
@@ -2128,7 +1549,7 @@ static int venc_set_h265base_args(int channel)
     return s32Ret;
 }
 
-int sal_sys_init(sal_video_s* video)
+int sal_sys_init1(sal_video_s* video)
 {
     CHECK(NULL == g_av_args, HI_FAILURE, "reinit error, please exit first.\n");
     CHECK(NULL != video, HI_FAILURE, "null ptr error.\n");
@@ -2152,7 +1573,7 @@ int sal_sys_init(sal_video_s* video)
     pthread_mutex_init(&g_av_args->mutex, NULL);
     memcpy(&g_av_args->video, video, sizeof(*video));
     g_av_args->pixel_fmt = PIXEL_FORMAT_YUV_SEMIPLANAR_420;
-    g_av_args->sensor_type = SENSOR_TYPE0;
+    g_av_args->sensor_type = SENSOR_VIRTUAL;
     g_av_args->vi_width = g_av_args->video.stream[0].width;
     g_av_args->vi_height = g_av_args->video.stream[0].height;
     g_av_args->vi_fps = g_av_args->video.stream[0].framerate;
@@ -2160,7 +1581,7 @@ int sal_sys_init(sal_video_s* video)
     g_av_args->ext_chn_height = g_av_args->video.stream[0].height;
 
     //g_av_args->scale_enable = (g_av_args->sensor_type == SONY_IMX291_LVDS_1080P_30FPS) ? 1 : 0;
-    g_av_args->scale_enable = 1;
+    g_av_args->scale_enable = 0;
     
     if (g_av_args->scale_enable && g_av_args->sensor_type == SONY_IMX291_LVDS_1080P_30FPS)
     {
@@ -2223,7 +1644,8 @@ int sal_sys_init(sal_video_s* video)
     }
 
     CHECK(g_av_args->video_chn_num > 0, HI_FAILURE, "error: video chn num is %d\n", g_av_args->video_chn_num);
-
+    
+    if (0)
     {
         // LBR功能
         for (i = 0; i < g_av_args->video_chn_num; i++)
@@ -2258,7 +1680,7 @@ int sal_sys_init(sal_video_s* video)
     }
 
     int s32Ret = 0;
-    VI_DEV ViDev = 0;
+    VI_DEV ViDev = 1;
     ISP_DEV IspDev = ViDev;
     VPSS_GRP VpssGrp = ViDev;
     DBG("ViDev[%d] IspDev[%d] VpssGrp[%d]\n", ViDev, IspDev, VpssGrp);
@@ -2301,7 +1723,7 @@ int sal_sys_init(sal_video_s* video)
         }
     }
     //create venc channel
-    for (i = 0; i < (unsigned int)g_av_args->video_chn_num; i++)
+    for (i = 4; i < (unsigned int)g_av_args->video_chn_num+4; i++)
     {
         g_av_args->venc_chn[idx_chn_venc] = i;
         idx_chn_venc++;
@@ -2370,7 +1792,7 @@ int sal_sys_init(sal_video_s* video)
     return 0;
 }
 
-int sal_sys_exit(void)
+int sal_sys_exit1(void)
 {
     CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
 
@@ -2382,7 +1804,7 @@ int sal_sys_exit(void)
         pthread_join(g_av_args->tid, NULL);
     }
     
-    VI_DEV ViDev = 0;
+    VI_DEV ViDev = 1;
     ISP_DEV IspDev = ViDev;
     VPSS_GRP VpssGrp = ViDev;
     DBG("ViDev[%d] IspDev[%d] VpssGrp[%d]\n", ViDev, IspDev, VpssGrp);
@@ -2461,443 +1883,6 @@ int sal_sys_exit(void)
     return 0;
 }
 
-int sal_sys_version(char* buffer, int len)
-{
-    int s32Ret = -1;
-    MPP_VERSION_S stVersion;
-    memset(&stVersion, 0, sizeof(stVersion));
 
-    s32Ret = HI_MPI_SYS_GetVersion(&stVersion);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    char tmp[512];
-    memset(tmp, 0, sizeof(tmp));
-    snprintf(tmp, sizeof(tmp), "[%s] libipc.so has built at %s %s",
-                                stVersion.aVersion, __DATE__, __TIME__);
-    CHECK(len > strlen(tmp), HI_FAILURE, "Error with %d.\n", len);
-    memset(buffer, 0, len);
-    strcpy(buffer, tmp);
-
-    return 0;
-}
-
-int sal_video_vi_framerate_set(int framerate)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-
-    if (g_av_args->vi_fps == framerate)
-    {
-        return 0;
-    }
-
-    DBG("old vi framerate: %d, new vi framerate: %d\n", g_av_args->vi_fps, framerate);
-    g_av_args->vi_fps = framerate;
-
-    pthread_mutex_lock(&g_av_args->mutex);
-    int s32Ret = -1;
-    ISP_DEV IspDev = 0;
-    ISP_PUB_ATTR_S stPubAttr;
-    memset(&stPubAttr, 0, sizeof(stPubAttr));
-    s32Ret = HI_MPI_ISP_GetPubAttr(IspDev, &stPubAttr);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    stPubAttr.f32FrameRate = framerate;
-
-    s32Ret = HI_MPI_ISP_SetPubAttr(IspDev, &stPubAttr);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-
-    return 0;
-}
-
-int sal_video_framerate_set(int stream, int framerate)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
-
-/*
-    int src_fps = g_av_args->video.stream[0].framerate;
-    int last_fps = g_av_args->video.stream[stream].framerate;
-    if (last_fps == framerate && src_fps >= framerate)
-    {
-        return 0;
-    }
-*/
-
-    int s32Ret = -1;
-
-
-    pthread_mutex_lock(&g_av_args->mutex);
-    
-    DBG("stream: %d, old framerate: %d, new framerate: %d\n", stream, g_av_args->video.stream[stream].framerate, framerate);
-    g_av_args->video.stream[stream].framerate = framerate;
-
-    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        s32Ret = venc_set_h264base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        s32Ret = venc_set_h265base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-
-    return 0;
-}
-
-int sal_video_resolution_set(int stream, int framerate)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
-
-    int s32Ret = -1;
-
-    pthread_mutex_lock(&g_av_args->mutex);
-    
-    DBG("stream: %d, old framerate: %d, new framerate: %d\n", stream, g_av_args->video.stream[stream].framerate, framerate);
-    g_av_args->video.stream[stream].framerate = framerate;
-
-    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        s32Ret = venc_set_h264base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        s32Ret = venc_set_h265base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-
-    return 0;
-}
-
-int sal_video_args_get(int stream, sal_stream_s* video)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
-    CHECK(NULL != video, HI_FAILURE, "null ptr error.\n");
-
-    pthread_mutex_lock(&g_av_args->mutex);
-
-    memcpy(video, &g_av_args->video.stream[stream], sizeof(*video));
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-    return 0;
-}
-
-int sal_video_bitrate_set(int stream, SAL_BITRATE_CONTROL_E bitrate_ctl, int bitrate)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
-    pthread_mutex_lock(&g_av_args->mutex);
-
-    int s32Ret = 0;
-
-    // LBR功能启用
-    {
-        g_config.lbr[stream].enable = (bitrate_ctl == SAL_BITRATE_CONTROL_VBR) ? 1 : 0;
-        g_config.lbr[stream].bitrate = bitrate;
-    }
-
-    g_av_args->video.stream[stream].bitrate_ctl = bitrate_ctl;
-    g_av_args->video.stream[stream].bitrate = bitrate;
-    
-    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        s32Ret = venc_set_h264base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        s32Ret = venc_set_h265base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-    return 0;
-}
-
-int sal_video_lbr_set(int stream, SAL_BITRATE_CONTROL_E bitrate_ctl, int bitrate)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
-    pthread_mutex_lock(&g_av_args->mutex);
-
-    int s32Ret = 0;
-
-    g_av_args->video.stream[stream].bitrate_ctl = bitrate_ctl;
-    g_av_args->video.stream[stream].bitrate = bitrate;
-    
-    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        s32Ret = venc_set_h264base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        s32Ret = venc_set_h265base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-    return 0;
-}
-
-int sal_video_gop_set(int stream, int gop)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(stream < g_av_args->video_chn_num, HI_FAILURE, "stream [%d] illegal\n", stream);
-    pthread_mutex_lock(&g_av_args->mutex);
-
-    int s32Ret = 0;
-
-    g_av_args->video.stream[stream].gop = gop;
-    if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        s32Ret = venc_set_h264base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else if (g_av_args->video.stream[stream].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        s32Ret = venc_set_h265base_args(stream);
-        CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    pthread_mutex_unlock(&g_av_args->mutex);
-    return 0;
-}
-
-int sal_video_mirror_set(int enable)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-
-    /*int ret = -1;
-
-    switch(g_av_args->sensor_type)
-    {
-        case OMNIVISION_OV9732_MIPI_720P_30FPS:
-        {
-            ret = ov9732_mirror_set(enable);
-            break;
-        }
-        case OMNIVISION_OV2710_MIPI_1080P_30FPS:
-        {
-            ret = ov2710_mirror_set(enable);
-            break;
-        }
-        case SONY_IMX291_LVDS_1080P_30FPS:
-        {
-            ret = imx291_mirror_set(enable);
-            break;
-        }
-        case SONY_IMX323_DC_1080P_30FPS:
-        {
-            ret = imx323_mirror_set(enable);
-            break;
-        }
-        case SMARTSENS_SC1135_DC_960P_30FPS:
-        {
-            ret = sc1135_mirror_set(enable);
-            break;
-        }
-        case APTINA_AR0237_DC_1080P_30FPS:
-        {
-            ret = ar0237_mirror_set(enable);
-            break;
-        }
-        case SMARTSENS_SC2135_DC_1080P_30FPS:
-        {
-            ret = sc2135_mirror_set(enable);
-            break;
-        }
-        case APTINA_AR0130_DC_720P_30FPS:
-        {
-            ret = ar0130_mirror_set(enable);
-            break;
-        }
-        default:
-            DBG("unknown sensor type %d.\n", g_av_args->sensor_type);
-            break;
-    }*/
-
-    return 0;
-}
-
-/*flip需要设置sensor停流和开流，否则会有短暂偏红*/
-int sal_video_flip_set(int enable)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-
-    /*int ret = -1;
-
-    switch(g_av_args->sensor_type)
-    {
-        case OMNIVISION_OV9732_MIPI_720P_30FPS:
-        {
-            ret = ov9732_flip_set(enable);
-            break;
-        }
-        case OMNIVISION_OV2710_MIPI_1080P_30FPS:
-        {
-            ret = ov2710_flip_set(enable);
-            break;
-        }
-        case SONY_IMX291_LVDS_1080P_30FPS:
-        {
-            ret = imx291_flip_set(enable);
-            break;
-        }
-        case SONY_IMX323_DC_1080P_30FPS:
-        {
-            ret = imx323_flip_set(enable);
-            break;
-        }
-        case SMARTSENS_SC1135_DC_960P_30FPS:
-        {
-            ret = sc1135_flip_set(enable);
-            break;
-        }
-        case APTINA_AR0237_DC_1080P_30FPS:
-        {
-            ret = ar0237_flip_set(enable);
-            break;
-        }
-        case SMARTSENS_SC2135_DC_1080P_30FPS:
-        {
-            ret = sc2135_flip_set(enable);
-            break;
-        }
-        case APTINA_AR0130_DC_720P_30FPS:
-        {
-            ret = ar0130_flip_set(enable);
-            break;
-        }
-        default:
-            DBG("unknown sensor type %d.\n", g_av_args->sensor_type);
-            break;
-    }*/
-
-    return 0;
-}
-
-
-int sal_video_force_idr(int channel)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(channel < g_av_args->video_chn_num, HI_FAILURE, "channel [%d] illegal\n", channel);
-
-    int s32Ret = 0;
-
-    s32Ret = HI_MPI_VENC_RequestIDR(channel, HI_TRUE);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    return s32Ret;
-}
-
-int sal_video_cbr_qp_set(int channel, sal_video_qp_s* qp_args)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(NULL != qp_args, HI_FAILURE, "NULL ptr error.\n");
-    CHECK(channel < g_av_args->video_chn_num, HI_FAILURE, "channel [%d] illegal\n", channel);
-
-    int s32Ret = HI_FAILURE;
-    VENC_CHN_ATTR_S stVencChnAttr;
-    s32Ret = HI_MPI_VENC_GetChnAttr(channel, &stVencChnAttr);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    CHECK(stVencChnAttr.stRcAttr.enRcMode == VENC_RC_MODE_H264CBR, HI_FAILURE, "bitrate mode is not cbr\n");
-
-    VENC_RC_PARAM_S stRcParam;
-    s32Ret = HI_MPI_VENC_GetRcParam(channel, &stRcParam);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    
-    if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        stRcParam.stParamH264Cbr.u32MinIQp = qp_args->min_i_qp;
-        stRcParam.stParamH264Cbr.u32MaxIQp = qp_args->max_i_qp;
-        stRcParam.stParamH264Cbr.u32MinQp = qp_args->min_qp;
-        stRcParam.stParamH264Cbr.u32MaxQp = qp_args->max_qp;
-    }
-    else if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        stRcParam.stParamH265Cbr.u32MinIQp = qp_args->min_i_qp;
-        stRcParam.stParamH265Cbr.u32MaxIQp = qp_args->max_i_qp;
-        stRcParam.stParamH265Cbr.u32MinQp = qp_args->min_qp;
-        stRcParam.stParamH265Cbr.u32MaxQp = qp_args->max_qp;
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    s32Ret = HI_MPI_VENC_SetRcParam(channel, &stRcParam);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-
-    return s32Ret;
-}
-
-int sal_video_cbr_qp_get(int channel, sal_video_qp_s* qp_args)
-{
-    CHECK(NULL != g_av_args, HI_FAILURE, "module not inited.\n");
-    CHECK(NULL != qp_args, HI_FAILURE, "NULL ptr error.\n");
-    CHECK(channel < g_av_args->video_chn_num, HI_FAILURE, "channel [%d] illegal\n", channel);
-
-    int s32Ret = HI_FAILURE;
-    memset(qp_args, 0, sizeof(*qp_args));
-    VENC_CHN_ATTR_S stVencChnAttr;
-    s32Ret = HI_MPI_VENC_GetChnAttr(channel, &stVencChnAttr);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    CHECK(stVencChnAttr.stRcAttr.enRcMode == VENC_RC_MODE_H264CBR, HI_FAILURE, "bitrate mode is not cbr\n");
-
-    VENC_RC_PARAM_S stRcParam;
-    s32Ret = HI_MPI_VENC_GetRcParam(channel, &stRcParam);
-    CHECK(s32Ret == HI_SUCCESS, HI_FAILURE, "Error with %#x.\n", s32Ret);
-    
-    if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H264)
-    {
-        qp_args->min_i_qp = stRcParam.stParamH264Cbr.u32MinIQp;
-        qp_args->max_i_qp = stRcParam.stParamH264Cbr.u32MaxIQp;
-        qp_args->min_qp = stRcParam.stParamH264Cbr.u32MinQp;
-        qp_args->max_qp = stRcParam.stParamH264Cbr.u32MaxQp;
-    }
-    else if (g_av_args->video.stream[channel].encode_type == SAL_ENCODE_TYPE_H265)
-    {
-        qp_args->min_i_qp = stRcParam.stParamH265Cbr.u32MinIQp;
-        qp_args->max_i_qp = stRcParam.stParamH265Cbr.u32MaxIQp;
-        qp_args->min_qp = stRcParam.stParamH265Cbr.u32MinQp;
-        qp_args->max_qp = stRcParam.stParamH265Cbr.u32MaxQp;
-    }
-    else
-    {
-        CHECK(0, HI_FAILURE, "Error with %#x.\n", -1);
-    }
-
-    return s32Ret;
-}
 
 

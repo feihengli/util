@@ -7,7 +7,7 @@ extern "C"{
 #endif
 #endif
 
-#define USE_MESSAGE 1
+#define USE_MESSAGE 0
 
 #include "sal_standard.h"
 

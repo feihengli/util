@@ -12,6 +12,9 @@ extern "C"
 #endif
 #endif /* __cplusplus */
 
+#define RET_SUCCESS  1
+#define RET_FAIL     2
+
 /**
  * read T01 registers
  **/
@@ -21,6 +24,9 @@ int IHwDet_Reg_Read(unsigned int addr, unsigned int *value);
  * write T01 registers
  **/
 int IHwDet_Reg_Write(unsigned int addr, unsigned int value);
+
+int spirit_api_cmd_set(int cmd_type, int cmd, unsigned int *data);
+int spirit_api_cmd_get(int cmd_type, int cmd, unsigned int *data);
 
 /**
  * To be realized

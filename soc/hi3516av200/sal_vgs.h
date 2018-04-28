@@ -16,6 +16,7 @@ typedef struct rectangle_s
     int y;      //矩形起点纵坐标
     int width;  //矩形宽度
     int height; //矩形高度
+    unsigned int color; //矩形颜色
 }rectangle_s;
 
 /*

@@ -112,6 +112,14 @@ cp ./ethtool ../ethtool -af
 ${COMPILE}-strip ../ethtool
 cd ../
 
+#mkfs.fat
+rm -rf dosfstools-4.1
+tar -xvf dosfstools_4.1.orig.tar.xz
+cd ./dosfstools-4.1;
+./configure --host=${COMPILE}
+make
+cp ./src/mkfs.fat ../ -af
+cd ../
 
 #${COMPILE}-strip --strip-debug --strip-unneeded *.a
 

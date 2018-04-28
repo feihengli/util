@@ -17,7 +17,7 @@
 #include "sal_debug.h"
 
 
-#define STAT_MAX_STREAM_NUM 4
+#define STAT_MAX_STREAM_NUM 16
 
 typedef struct sal_statistics_args
 {

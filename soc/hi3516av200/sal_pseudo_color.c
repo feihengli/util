@@ -215,6 +215,8 @@ static void* pc_proc(void* args)
     s32Ret = HI_MPI_VPSS_SetDepth(VpssGrp, g_pc_args->vpss_chn, u32Depth);
     CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
     
+    //sleep(5);
+    
     while (g_pc_args->running)
     {
         util_time_abs(&g_pc_args->current);
@@ -228,82 +230,59 @@ static void* pc_proc(void* args)
         
         if (g_pc_args->enable)
         {
-            stResizeSrc.enType = IVE_IMAGE_TYPE_U8C1;
-            stResizeSrc.pu8VirAddr[0] = (HI_U8*)stFrameInfo.stVFrame.pVirAddr[0];
-            stResizeSrc.u32PhyAddr[0] = stFrameInfo.stVFrame.u32PhyAddr[0];
-            stResizeSrc.u16Stride[0] = (HI_U16)stFrameInfo.stVFrame.u32Stride[0];
-            stResizeSrc.u16Width = (HI_U16)stFrameInfo.stVFrame.u32Width;
-            stResizeSrc.u16Height = stFrameInfo.stVFrame.u32Height;
-            stResizeSrc.u16Stride[1] = stResizeSrc.u16Stride[0];
-            stResizeSrc.u32PhyAddr[1] = stResizeSrc.u32PhyAddr[0] + stResizeSrc.u16Stride[0] * stResizeSrc.u16Height;
-            stResizeSrc.pu8VirAddr[1] = stResizeSrc.pu8VirAddr[0] + stResizeSrc.u16Stride[0] * stResizeSrc.u16Height;
-
-            s32Ret = pc_resize(&stResizeSrc, &stResizeDst);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-
-            stSrc.enType = IVE_IMAGE_TYPE_U8C1;
-            stSrc.pu8VirAddr[0] = (HI_U8*)stFrameInfo.stVFrame.pVirAddr[0];
-            stSrc.u32PhyAddr[0] = stFrameInfo.stVFrame.u32PhyAddr[0];
-            stSrc.u16Stride[0] = (HI_U16)stFrameInfo.stVFrame.u32Stride[0];
-            stSrc.u16Width = (HI_U16)stFrameInfo.stVFrame.u32Width;
-            stSrc.u16Height = stFrameInfo.stVFrame.u32Height;
-
-            stDstY.enType = IVE_IMAGE_TYPE_U8C1;
-            stDstY.pu8VirAddr[0] = (HI_U8*)stFrameInfo.stVFrame.pVirAddr[0];
-            stDstY.u32PhyAddr[0] = stFrameInfo.stVFrame.u32PhyAddr[0];
-            stDstY.u16Stride[0] = (HI_U16)stFrameInfo.stVFrame.u32Stride[0];
-            stDstY.u16Width = (HI_U16)stFrameInfo.stVFrame.u32Width;
-            stDstY.u16Height = stFrameInfo.stVFrame.u32Height;
-                 
-            stMapCtrl.enMode = IVE_MAP_MODE_U8;
-            stMap.u32Size = sizeof(IVE_MAP_U8BIT_LUT_MEM_S);
-
-            s32Ret = HI_MPI_SYS_MmzAlloc(&stMap.u32PhyAddr, (void**)&stMap.pu8VirAddr, MMZ_PC_ZONE_NAME, HI_NULL, stMap.u32Size);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-
-            memcpy(stMap.pu8VirAddr, g_pc_args->u8_y, stMap.u32Size);
-
-            s32Ret = pc_map(&stSrc, &stMap, &stDstY, &stMapCtrl);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-
-            s32Ret = HI_MPI_SYS_MmzFree(stMap.u32PhyAddr, stMap.pu8VirAddr);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-
-            memcpy(&stSrc1, &stResizeDst, sizeof(stResizeDst));
-
-            stDstUv.enType = IVE_IMAGE_TYPE_U16C1;
-            stDstUv.pu8VirAddr[0] = (HI_U8*)stFrameInfo.stVFrame.pVirAddr[1];
-            stDstUv.u32PhyAddr[0] = stFrameInfo.stVFrame.u32PhyAddr[1];
-            stDstUv.u16Stride[0] = (HI_U16)stFrameInfo.stVFrame.u32Stride[1] / 2;
-            stDstUv.u16Width = (HI_U16)stFrameInfo.stVFrame.u32Width /2 ;
-            stDstUv.u16Height = stFrameInfo.stVFrame.u32Height / 2;
-
-            stMapCtrl.enMode = IVE_MAP_MODE_U16;
-            stMap.u32Size = sizeof(IVE_MAP_U16BIT_LUT_MEM_S);
-
-            s32Ret = HI_MPI_SYS_MmzAlloc(&stMap.u32PhyAddr, (void**)&stMap.pu8VirAddr, MMZ_PC_ZONE_NAME, HI_NULL, stMap.u32Size);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-
-            memcpy(stMap.pu8VirAddr, g_pc_args->u8_vu, stMap.u32Size);
-
-            s32Ret = pc_map(&stSrc1, &stMap, &stDstUv, &stMapCtrl);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-
-            s32Ret = HI_MPI_SYS_MmzFree(stMap.u32PhyAddr, stMap.pu8VirAddr);
-            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+            unsigned int u32Size = (stFrameInfo.stVFrame.u32Stride[0]) * (stFrameInfo.stVFrame.u32Height) * 3 / 2;//yuv420
+            unsigned char* yuv420sp = (unsigned char*) HI_MPI_SYS_Mmap(stFrameInfo.stVFrame.u32PhyAddr[0], u32Size);
+            CHECK(yuv420sp, NULL, "error with %#x.\n", yuv420sp);
             
-            if (g_pc_args->enable_osd)
-            {
-                s32Ret = sal_vgs_draw_osd(&stFrameInfo, g_pc_args->rgb1555buffer, g_pc_args->width, g_pc_args->height);
-                CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-            }
+            memset(yuv420sp, 0x80, 8);
+            static unsigned int count = 0;
+            unsigned char cc[4] = {0};
+            memcpy(cc, &count, 4);
+            count++;
+            yuv420sp[0] |= cc[0] >> 4;
+            yuv420sp[1] |= cc[0] & 0x0f;
+            yuv420sp[2] |= cc[1] >> 4;
+            yuv420sp[3] |= cc[1] & 0x0f;
+            yuv420sp[4] |= cc[2] >> 4;
+            yuv420sp[5] |=cc[2] & 0x0f;
+            yuv420sp[6] |= cc[3] >> 4;
+            yuv420sp[7] |= cc[3] & 0x0f;
+            
+            cc[0] |= yuv420sp[0] << 4;
+            cc[0] |= yuv420sp[1] & 0x0f;
+            cc[1] |= yuv420sp[2] << 4;
+            cc[1] |= yuv420sp[3] & 0x0f;
+            cc[2] |= yuv420sp[4] << 4;
+            cc[2] |= yuv420sp[5] & 0x0f;
+            cc[3] |= yuv420sp[6] << 4;
+            cc[3] |= yuv420sp[7] & 0x0f;
+            unsigned int tt = 0;
+            memcpy(&tt, cc, 4);
+            //DBG("count: %d, tt: %d\n", count, tt);
+            //printf("VPSS begin : %02x %02x %02x %02x %02x %02x %02x %02x\n", yuv420sp[0], yuv420sp[1], yuv420sp[2], yuv420sp[3], yuv420sp[4], yuv420sp[5], yuv420sp[6], yuv420sp[7]);
+            //memset(yuv420sp, 0xff, u32Size);
+            //DBG("reset ok\n");
+            
+            char tmp[32];
+            static int count1 = 0;
+            sprintf(tmp, "ttt_%d.yuv", count1++);
+            
+            //pc_save2file(tmp, &stFrameInfo);
+            
+            s32Ret = HI_MPI_SYS_Munmap(yuv420sp, u32Size);
+            CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
         }
         
-        s32Ret = HI_MPI_VENC_SendFrame(g_pc_args->venc_chn, &stFrameInfo, -1);
+        //s32Ret = HI_MPI_VENC_SendFrame(g_pc_args->venc_chn, &stFrameInfo, -1);
+        //CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+        
+        s32Ret = HI_MPI_VO_SendFrame(0, 0, &stFrameInfo, -1);
         CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
 
         s32Ret = HI_MPI_VPSS_ReleaseChnFrame(VpssGrp, g_pc_args->vpss_chn, &stFrameInfo);
         CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
+        
+        //break;
     }
 
     return NULL;
@@ -445,7 +424,7 @@ int sal_pc_init()
     memset(g_pc_args, 0, sizeof(sal_pc_args));
     pthread_mutex_init(&g_pc_args->mutex, NULL);
     
-    g_pc_args->vpss_chn = 4;
+    g_pc_args->vpss_chn = 0;
     g_pc_args->venc_chn = 0;
     g_pc_args->enable = 1;
     g_pc_args->enable_osd = 1;

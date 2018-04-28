@@ -2358,7 +2358,7 @@ static int isp_sharpness_set(HI_U8 value)
 
 static const char* isp_get_xml_path()
 {
-    SAMPLE_VI_MODE_E sensor_type = SENSOR_TYPE;
+    SAMPLE_VI_MODE_E sensor_type = gp_isp_config->sensor_type;
     const char* path = NULL;
     //default xml
     switch(sensor_type)
@@ -3011,7 +3011,7 @@ int sal_isp_init(sal_isp_s* isp_param)
     gp_isp_config->bUpdate = 1;
 */
 
-    gp_isp_config->sensor_type = SENSOR_TYPE;
+    gp_isp_config->sensor_type = SENSOR_TYPE0;
     gp_isp_config->running = 1;
     ret = pthread_create(&gp_isp_config->pid, NULL, isp_thread, NULL);
     CHECK(ret == HI_SUCCESS, HI_FAILURE, "Error with %#x\n", ret);

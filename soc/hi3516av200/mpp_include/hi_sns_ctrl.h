@@ -73,6 +73,7 @@ extern ISP_SNS_OBJ_S stSnsMn34220Obj;
 extern ISP_SNS_OBJ_S stSnsImx185Obj;
 extern ISP_SNS_OBJ_S stSnsImx274MipiObj;
 extern ISP_SNS_OBJ_S stSnsImx377Obj;
+extern ISP_SNS_OBJ_S stSnsVirtualObj;
 
 #ifdef __cplusplus
 #if __cplusplus

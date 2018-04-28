@@ -1,6 +1,7 @@
 
-#ifndef sal_vo_h__
-#define sal_vo_h__
+#ifndef aenc_g711_h__
+#define aenc_g711_h__
+
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -8,11 +9,10 @@ extern "C"{
 #endif
 #endif
 
-#include "hi_comm.h"
+#include "sal_standard.h"
 
 
-int vo_init();
-int vo_exit();
+
 
 
 #ifdef __cplusplus

@@ -2,6 +2,11 @@
 #include "sal_debug.h"
 #include "sal_vgs.h"
 
+static unsigned int vgs_stride(unsigned int u16Width, unsigned char u8Align)
+{
+    return (u16Width + (u8Align - u16Width%u8Align)%u8Align);
+}
+
 int sal_vgs_draw_rectangle(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned int u32Thick, unsigned int u32Color
                             , int x, int y, int width, int height)
 {
@@ -84,39 +89,39 @@ int sal_vgs_draw_rectangle1(VIDEO_FRAME_INFO_S* pstOutFrameInfo, unsigned int u3
     for (j = 0; j < num; j++)
     {
         //¾ØÐÎÉÏ±ß
-        pstADrawLine[i].stStartPoint.s32X = pstArectangle[j].x;
-        pstADrawLine[i].stStartPoint.s32Y = pstArectangle[j].y;
-        pstADrawLine[i].stEndPoint.s32X = pstArectangle[j].x+pstArectangle[j].width;
-        pstADrawLine[i].stEndPoint.s32Y = pstArectangle[j].y;
+        pstADrawLine[i].stStartPoint.s32X = vgs_stride(pstArectangle[j].x, 2);
+        pstADrawLine[i].stStartPoint.s32Y = vgs_stride(pstArectangle[j].y, 2);
+        pstADrawLine[i].stEndPoint.s32X = vgs_stride(pstArectangle[j].x+pstArectangle[j].width, 2);
+        pstADrawLine[i].stEndPoint.s32Y = vgs_stride(pstArectangle[j].y, 2);
         pstADrawLine[i].u32Thick = u32Thick;
-        pstADrawLine[i].u32Color = u32Color;
+        pstADrawLine[i].u32Color = pstArectangle[j].color;
         i++;
 
         //¾ØÐÎÏÂ±ß
-        pstADrawLine[i].stStartPoint.s32X = pstArectangle[j].x;
-        pstADrawLine[i].stStartPoint.s32Y = pstArectangle[j].y+pstArectangle[j].height;
-        pstADrawLine[i].stEndPoint.s32X = pstArectangle[j].x+pstArectangle[j].width;
-        pstADrawLine[i].stEndPoint.s32Y = pstArectangle[j].y+pstArectangle[j].height;
+        pstADrawLine[i].stStartPoint.s32X = vgs_stride(pstArectangle[j].x, 2);
+        pstADrawLine[i].stStartPoint.s32Y = vgs_stride(pstArectangle[j].y+pstArectangle[j].height, 2);
+        pstADrawLine[i].stEndPoint.s32X = vgs_stride(pstArectangle[j].x+pstArectangle[j].width, 2);
+        pstADrawLine[i].stEndPoint.s32Y = vgs_stride(pstArectangle[j].y+pstArectangle[j].height, 2);
         pstADrawLine[i].u32Thick = u32Thick;
-        pstADrawLine[i].u32Color = u32Color;
+        pstADrawLine[i].u32Color = pstArectangle[j].color;
         i++;
 
         //¾ØÐÎ×ó±ß
-        pstADrawLine[i].stStartPoint.s32X = pstArectangle[j].x;
-        pstADrawLine[i].stStartPoint.s32Y = pstArectangle[j].y;
-        pstADrawLine[i].stEndPoint.s32X = pstArectangle[j].x;
-        pstADrawLine[i].stEndPoint.s32Y = pstArectangle[j].y+pstArectangle[j].height;
+        pstADrawLine[i].stStartPoint.s32X = vgs_stride(pstArectangle[j].x, 2);
+        pstADrawLine[i].stStartPoint.s32Y = vgs_stride(pstArectangle[j].y, 2);
+        pstADrawLine[i].stEndPoint.s32X = vgs_stride(pstArectangle[j].x, 2);
+        pstADrawLine[i].stEndPoint.s32Y = vgs_stride(pstArectangle[j].y+pstArectangle[j].height, 2);
         pstADrawLine[i].u32Thick = u32Thick;
-        pstADrawLine[i].u32Color = u32Color;
+        pstADrawLine[i].u32Color = pstArectangle[j].color;
         i++;
 
         //¾ØÐÎÓÒ±ß
-        pstADrawLine[i].stStartPoint.s32X = pstArectangle[j].x+pstArectangle[j].width;
-        pstADrawLine[i].stStartPoint.s32Y = pstArectangle[j].y;
-        pstADrawLine[i].stEndPoint.s32X = pstArectangle[j].x+pstArectangle[j].width;
-        pstADrawLine[i].stEndPoint.s32Y = pstArectangle[j].y+pstArectangle[j].height;
+        pstADrawLine[i].stStartPoint.s32X = vgs_stride(pstArectangle[j].x+pstArectangle[j].width, 2);
+        pstADrawLine[i].stStartPoint.s32Y = vgs_stride(pstArectangle[j].y, 2);
+        pstADrawLine[i].stEndPoint.s32X = vgs_stride(pstArectangle[j].x+pstArectangle[j].width, 2);
+        pstADrawLine[i].stEndPoint.s32Y = vgs_stride(pstArectangle[j].y+pstArectangle[j].height, 2);
         pstADrawLine[i].u32Thick = u32Thick;
-        pstADrawLine[i].u32Color = u32Color;
+        pstADrawLine[i].u32Color = pstArectangle[j].color;
         i++;
     }
 

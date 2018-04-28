@@ -15,9 +15,16 @@ $(TARGETS):$(OBJS)
 	$(AR) rcs $@ $^
 	@echo
 sensor_lib:
-	make -C $(SENSOR_PATH)
-	@echo
 
+ifneq ($(SENSOR_PATH0), )
+	make -C $(SENSOR_PATH0)
+endif
+
+ifneq ($(SENSOR_PATH1), )
+	make -C $(SENSOR_PATH1)
+endif
+
+	@echo
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
 	@echo
@@ -36,5 +43,13 @@ sensor_lib:
 -include $(OBJS:.o=.d)
 
 clean:
-	make -C $(SENSOR_PATH) clean
+
+ifneq ($(SENSOR_PATH0), )
+	make -C $(SENSOR_PATH0) clean
+endif
+
+ifneq ($(SENSOR_PATH1), )
+	make -C $(SENSOR_PATH1) clean
+endif
+	
 	rm -r $(TARGETS);rm *.o;rm -f *.d

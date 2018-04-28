@@ -53,7 +53,7 @@
 /**
  * default strength filter
  **/
-#define DEFAULT_STRENGTH_FILTER		0.4
+#define DEFAULT_STRENGTH_FILTER		0.1
 
 /**
  * thumbnail data type

@@ -3,604 +3,499 @@
 #include "sal_util.h"
 #include "sal_vgs.h"
 #include "sal_t01.h"
+#include "sal_list.h"
 
-#include "t01/object.h"
-#include "t01/ioattr.h"
-#include "t01/ihwdet.h"
-#include "t01/ext.h"
-#include "t01/event.h"
-#include "t01/debug.h"
-
-
-#define SENSOR_FPS	25
-
-int stop = 0;
-pthread_t tid_user_0;
-pthread_t tid_user_1;
-pthread_t tid_user_2;
-int user_0_md_channel;
-int user_1_md_channel;
-int user_2_md_channel;
-
-IHwDetAttr g_ioattr;
-
-extern void osd_render(int type, int x, int y, int w, int h, int tilt, int yaw, unsigned long long ts);
-extern void osd_render_cls(void);
-
-void osd_render(int type, int x, int y, int w, int h, int tilt, int yaw, unsigned long long ts)
+typedef struct _sal_t01_args
 {
+    int md_channel;
+    IHwDetAttr ioattr;
+    HwDetObj stHwDetObj;
+    IngDetObject astIngDetObj[128];//temp
+    IngDetObject astIngDetObj1[128];//temp
+
+    int running;
+    pthread_t pid;
+    pthread_mutex_t mutex;
+}sal_t01_args;
+
+static sal_t01_args* g_t01_args = NULL;
+
+static int t01_ioattr_init(IHwDetAttr* pstIoattr, int width, int height, int fps)
+{
+    /* input */
+    pstIoattr->input.interface = INPUT_INTERFACE_BT1120;
+    pstIoattr->input.data_type = INPUT_DVP_DATA_TYPE_YUV422_16B;
+    pstIoattr->input.image_width = width;
+    pstIoattr->input.image_height = height;
+    pstIoattr->input.raw_rggb = 0;
+    pstIoattr->input.raw_align = 1;
+    pstIoattr->input.config.dvp_bus_select = 0;
+    pstIoattr->input.fps = fps;
+    pstIoattr->input.mclk_enable = 0;
+
+    /* output only for MIPI bypass mode */
     
+    return 0;
 }
 
-void osd_render_cls(void)
+/*
+ *t01私有数据存放格式yuyv...yuyv，只提取y，所以要隔开一个字节。
+ *每一个y的低4bit，拼成一个unsigned int作为帧序号
+ */
+static unsigned int t01_transferPrivateCount(unsigned char privateData[16])
 {
-
+    unsigned int count = 0;
+    unsigned char cc[4] = {0};
+    cc[0] |= privateData[0] << 4;
+    cc[0] |= privateData[2] & 0x0f;
+    cc[1] |= privateData[4] << 4;
+    cc[1] |= privateData[6] & 0x0f;
+    cc[2] |= privateData[8] << 4;
+    cc[2] |= privateData[10] & 0x0f;
+    cc[3] |= privateData[12] << 4;
+    cc[3] |= privateData[14] & 0x0f;
+    memcpy(&count, cc, 4);
+    
+    //DBG("count: %d\n", count);
+    return count;
 }
 
-static void ioattr_init(void)
+static int t01_process_result(md_context_t md_context, HwDetObj* pstObj)
 {
-	/* input */
-	g_ioattr.input.interface = INPUT_INTERFACE_DVP_SONY;
-	g_ioattr.input.data_type = INPUT_DVP_DATA_TYPE_RAW12;
-	g_ioattr.input.image_width = 1920;
-	g_ioattr.input.image_height = 1080;
-	g_ioattr.input.raw_rggb = 0;
-	g_ioattr.input.raw_align = 1;
-	g_ioattr.input.blanking.hfb_num = 11;
-	g_ioattr.input.blanking.vic_input_vpara3 = 17;
-	g_ioattr.input.config.dvp_bus_select = 0;
-	g_ioattr.input.fps = SENSOR_FPS;
-	g_ioattr.input.mclk_enable = 0;
+    unsigned int i = 0;
+    unsigned int j = 0;
+    unsigned int idx = 0;
+    memset(g_t01_args->astIngDetObj, 0, sizeof(g_t01_args->astIngDetObj));
+    memset(g_t01_args->astIngDetObj1, 0, sizeof(g_t01_args->astIngDetObj1));
+    
+    //DBG("objnum: %d\n", pstObj->desc.objnum);
+    ASSERT(pstObj->desc.objnum < sizeof(pstObj->obj)/sizeof(pstObj->obj[0]), "error with %d\n", pstObj->desc.objnum);
+    
+    unsigned int sum = 0;
+    unsigned int sum1 = 0;
+    for (i = 0; i < pstObj->desc.objnum; i++) 
+    {
+        IngDetObject* obj = IHwDet_Get_Object(md_context, i);
+        CHECK(obj, -1, "Error with: %#x\n", obj);
+        
+        //DBG("i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+        if (obj->strength >= 0.3 && obj->type <= 2 /*obj->type == 2*/) //[0,6]
+        {
+            //memcpy(&g_t01_args->astIngDetObj[sum++], obj, sizeof(IngDetObject));
+            memcpy(&pstObj->obj[sum++], obj, sizeof(IngDetObject));
+            //DBG("valid i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+        }
+    }
+    pstObj->valid_obj_num = sum;
+    
+    ////同一对象，type最重要的保留
+    ////DBG("sum: %d\n", sum);
+    //for (i = 0; i < sum; i++) 
+    //{
+    //    //DBG("i: %d, id: %d, type: %d, strength: %f, life: %02x\n", i, g_t01_args->astIngDetObj[i].id, g_t01_args->astIngDetObj[i].type, g_t01_args->astIngDetObj[i].strength, g_t01_args->astIngDetObj[i].life);
+    //    if (g_t01_args->astIngDetObj[i].life != 0xff)
+    //    {
+    //        memcpy(&g_t01_args->astIngDetObj1[sum1], &g_t01_args->astIngDetObj[i], sizeof(IngDetObject));
+    //        for (j = i+1; j < sum; j++)
+    //        {
+    //            if (g_t01_args->astIngDetObj[i].id == g_t01_args->astIngDetObj[j].id)
+    //            {
+    //                if (g_t01_args->astIngDetObj[i].type > g_t01_args->astIngDetObj[j].type)
+    //                {
+    //                    memcpy(&g_t01_args->astIngDetObj1[sum1], &g_t01_args->astIngDetObj[j], sizeof(IngDetObject));
+    //                }
+    //                g_t01_args->astIngDetObj[j].life = 0xff;
+    //            }
+    //        }
+    //        sum1++;
+    //    }
+    //}
+    //
+    ////矩形重叠的，保留type重要的一项
+    ////DBG("sum1: %d\n", sum1);
+    //unsigned int k = 0;
+    //for (i = 0; i < sum1; i++) 
+    //{
+    //    //DBG("i: %d, id: %d, type: %d, strength: %f, life: %02x\n", i, g_t01_args->astIngDetObj1[i].id, g_t01_args->astIngDetObj1[i].type, g_t01_args->astIngDetObj1[i].strength, g_t01_args->astIngDetObj1[i].life);
+    //    if (g_t01_args->astIngDetObj1[i].life != 0xff) //有效的object
+    //    {
+    //        memcpy(&pstObj->obj[idx], &g_t01_args->astIngDetObj1[i], sizeof(IngDetObject));
+    //        //左上角坐标
+    //        unsigned int x1 = g_t01_args->astIngDetObj1[i].x;
+    //        unsigned int y1 = g_t01_args->astIngDetObj1[i].y;
+    //        //右上角坐标
+    //        unsigned int x2 = g_t01_args->astIngDetObj1[i].x+g_t01_args->astIngDetObj1[i].width;
+    //        unsigned int y2 = g_t01_args->astIngDetObj1[i].y;
+    //        //左下角坐标
+    //        unsigned int x3 = g_t01_args->astIngDetObj1[i].x;
+    //        unsigned int y3 = g_t01_args->astIngDetObj1[i].y+g_t01_args->astIngDetObj1[i].height;
+    //        //右下角坐标
+    //        unsigned int x4 = g_t01_args->astIngDetObj1[i].x+g_t01_args->astIngDetObj1[i].width;
+    //        unsigned int y4 = g_t01_args->astIngDetObj1[i].y+g_t01_args->astIngDetObj1[i].height;
+    //        unsigned int original_area1 = g_t01_args->astIngDetObj1[i].width*g_t01_args->astIngDetObj1[i].height;
+    //        for (j = i+1; j < sum1; j++)
+    //        {
+    //            unsigned int x5 = g_t01_args->astIngDetObj1[j].x;
+    //            unsigned int y5 = g_t01_args->astIngDetObj1[j].y;
+    //            unsigned int x6 = g_t01_args->astIngDetObj1[j].x+g_t01_args->astIngDetObj1[j].width;
+    //            unsigned int y6 = g_t01_args->astIngDetObj1[j].y;
+    //            unsigned int x7 = g_t01_args->astIngDetObj1[j].x;
+    //            unsigned int y7 = g_t01_args->astIngDetObj1[j].y+g_t01_args->astIngDetObj1[j].height;
+    //            unsigned int x8 = g_t01_args->astIngDetObj1[j].x+g_t01_args->astIngDetObj1[j].width;
+    //            unsigned int y8 = g_t01_args->astIngDetObj1[j].y+g_t01_args->astIngDetObj1[j].height;
+    //            unsigned int original_area2 = g_t01_args->astIngDetObj1[j].width*g_t01_args->astIngDetObj1[j].height;
 
-	/* output only for MIPI bypass mode */
+    //            if ((x1 >= x5 && x1 <= x8 && y1 >= y5 && y1 <= y8) 
+    //                || (x2 >= x5 && x2 <= x8 && y2 >= y5 && y2 <= y8)
+    //                || (x3 >= x5 && x3 <= x8 && y3 >= y5 && y3 <= y8)
+    //                || (x4 >= x5 && x4 <= x8 && y4 >= y5 && y4 <= y8)) /*两个矩形重叠*/
+    //            {
+    //                //WRN("overlap\n");
+    //                int overlap_width = x1-g_t01_args->astIngDetObj1[j].x;
+    //                int overlap_height = y1-g_t01_args->astIngDetObj1[j].y;
+    //                int overlap_area = overlap_width*overlap_height;
+    //                
+    //                if (g_t01_args->astIngDetObj1[i].type > g_t01_args->astIngDetObj1[j].type)
+    //                {
+    //                    memcpy(&pstObj->obj[idx], &g_t01_args->astIngDetObj1[j], sizeof(IngDetObject));
+    //                }
+    //                g_t01_args->astIngDetObj1[j].life = 0xff;
+    //            }
+    //        }
+    //        idx++;
+    //    }
+    //}
+
+    //pstObj->valid_obj_num = idx;
+    //
+    //DBG("valid_obj_num: %d\n", pstObj->valid_obj_num);
+    //for (i = 0; i < pstObj->valid_obj_num; i++)
+    //{
+    //    DBG("i: %d, id: %d, type: %d, xywh[%d %d %d %d]strength: %f, life: %02x\n", i, pstObj->obj[i].id, pstObj->obj[i].type, 
+    //            pstObj->obj[i].x, pstObj->obj[i].y, pstObj->obj[i].width, pstObj->obj[i].height, pstObj->obj[i].strength, pstObj->obj[i].life);
+    //}
+     
+    return 0;
 }
 
-static void *user_thread_0(void *data)
+static int t01_process_result_T(md_context_t md_context, HwDetObj* pstObj)
 {
-	int i;
-	int frame_cnt = 0;
-	char *user_0_log_file = (char *)"user_0.log";
-	char log_buf[1024];
+    unsigned int i = 0;
+    unsigned int j = 0;
+    unsigned int idx = 0;
+    memset(g_t01_args->astIngDetObj, 0, sizeof(g_t01_args->astIngDetObj));
+    memset(g_t01_args->astIngDetObj1, 0, sizeof(g_t01_args->astIngDetObj1));
 
-	prctl(PR_SET_NAME, "user_thread_0");
+    //DBG("tgtnum: %d\n", pstObj->desc_T.tgtnum);
+    //ASSERT(pstObj->desc_T.objnum < sizeof(pstObj->obj)/sizeof(pstObj->obj[0]), "error with %d\n", pstObj->desc.objnum);
 
-	FILE *fp = fopen(user_0_log_file, "a");
-	if (!fp) {
-		DBG("Can't create or open file [%s]\n", user_0_log_file);
-		return NULL;
-	}
-	DBG("USER 0 PROCESS: store result to [%s]\n", user_0_log_file);
+    unsigned int sum = 0;
+    unsigned int sum1 = 0;
+    for (i = 0; i < pstObj->desc_T.tgtnum; i++) 
+    {
+        IngTarget_T *target = IHwDet_Get_Target(md_context, i);
+        CHECK(target, -1, "Error with: %#x\n", target);
+        
+        if (IHwDet_Target_Have_Face(target))
+        {
+            IngDetObject *obj = IHwDet_Target_Get_Object(target, OBJ_TYPE_FACE);
+            CHECK(obj, -1, "Error with: %#x\n", obj);
+            DBG("i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+            if (obj->strength >= 0.3) //[0,6]
+            {
+                //memcpy(&g_t01_args->astIngDetObj[sum++], obj, sizeof(IngDetObject));
+                memcpy(&pstObj->obj[sum++], obj, sizeof(IngDetObject));
+                //DBG("valid i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+            }
+        }
+        if (IHwDet_Target_Have_HeadAndShoulder(target))
+        {
+            IngDetObject *obj = IHwDet_Target_Get_Object(target, OBJ_TYPE_HEAD_AND_SHOULDER);
+            CHECK(obj, -1, "Error with: %#x\n", obj);
+            DBG("i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+            if (obj->strength >= 0.3) //[0,6]
+            {
+                //memcpy(&g_t01_args->astIngDetObj[sum++], obj, sizeof(IngDetObject));
+                memcpy(&pstObj->obj[sum++], obj, sizeof(IngDetObject));
+                //DBG("valid i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+            }
+        }
 
-	while (1) {
-		int md_context = 0;
-		IngDetDesc desc;
+        if (IHwDet_Target_Have_Figure(target))
+        {
+            IngDetObject *obj = IHwDet_Target_Get_Object(target, OBJ_TYPE_FIGURE);
+            CHECK(obj, -1, "Error with: %#x\n", obj);
+            DBG("i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+            if (obj->strength >= 0.3) //[0,6]
+            {
+                //memcpy(&g_t01_args->astIngDetObj[sum++], obj, sizeof(IngDetObject));
+                memcpy(&pstObj->obj[sum++], obj, sizeof(IngDetObject));
+                //DBG("valid i: %d, id: %d, type: %d, strength: %f, life: %d\n", i, obj->id, obj->type, obj->strength, obj->life);
+            }
+        }
+    }
+    pstObj->valid_obj_num = sum;
 
-		if (stop == 1)
-			break;
+    ////同一对象，type最重要的保留
+    ////DBG("sum: %d\n", sum);
+    //for (i = 0; i < sum; i++) 
+    //{
+    //    //DBG("i: %d, id: %d, type: %d, strength: %f, life: %02x\n", i, g_t01_args->astIngDetObj[i].id, g_t01_args->astIngDetObj[i].type, g_t01_args->astIngDetObj[i].strength, g_t01_args->astIngDetObj[i].life);
+    //    if (g_t01_args->astIngDetObj[i].life != 0xff)
+    //    {
+    //        memcpy(&g_t01_args->astIngDetObj1[sum1], &g_t01_args->astIngDetObj[i], sizeof(IngDetObject));
+    //        for (j = i+1; j < sum; j++)
+    //        {
+    //            if (g_t01_args->astIngDetObj[i].id == g_t01_args->astIngDetObj[j].id)
+    //            {
+    //                if (g_t01_args->astIngDetObj[i].type > g_t01_args->astIngDetObj[j].type)
+    //                {
+    //                    memcpy(&g_t01_args->astIngDetObj1[sum1], &g_t01_args->astIngDetObj[j], sizeof(IngDetObject));
+    //                }
+    //                g_t01_args->astIngDetObj[j].life = 0xff;
+    //            }
+    //        }
+    //        sum1++;
+    //    }
+    //}
+    //
+    ////矩形重叠的，保留type重要的一项
+    ////DBG("sum1: %d\n", sum1);
+    //unsigned int k = 0;
+    //for (i = 0; i < sum1; i++) 
+    //{
+    //    //DBG("i: %d, id: %d, type: %d, strength: %f, life: %02x\n", i, g_t01_args->astIngDetObj1[i].id, g_t01_args->astIngDetObj1[i].type, g_t01_args->astIngDetObj1[i].strength, g_t01_args->astIngDetObj1[i].life);
+    //    if (g_t01_args->astIngDetObj1[i].life != 0xff) //有效的object
+    //    {
+    //        memcpy(&pstObj->obj[idx], &g_t01_args->astIngDetObj1[i], sizeof(IngDetObject));
+    //        //左上角坐标
+    //        unsigned int x1 = g_t01_args->astIngDetObj1[i].x;
+    //        unsigned int y1 = g_t01_args->astIngDetObj1[i].y;
+    //        //右上角坐标
+    //        unsigned int x2 = g_t01_args->astIngDetObj1[i].x+g_t01_args->astIngDetObj1[i].width;
+    //        unsigned int y2 = g_t01_args->astIngDetObj1[i].y;
+    //        //左下角坐标
+    //        unsigned int x3 = g_t01_args->astIngDetObj1[i].x;
+    //        unsigned int y3 = g_t01_args->astIngDetObj1[i].y+g_t01_args->astIngDetObj1[i].height;
+    //        //右下角坐标
+    //        unsigned int x4 = g_t01_args->astIngDetObj1[i].x+g_t01_args->astIngDetObj1[i].width;
+    //        unsigned int y4 = g_t01_args->astIngDetObj1[i].y+g_t01_args->astIngDetObj1[i].height;
+    //        unsigned int original_area1 = g_t01_args->astIngDetObj1[i].width*g_t01_args->astIngDetObj1[i].height;
+    //        for (j = i+1; j < sum1; j++)
+    //        {
+    //            unsigned int x5 = g_t01_args->astIngDetObj1[j].x;
+    //            unsigned int y5 = g_t01_args->astIngDetObj1[j].y;
+    //            unsigned int x6 = g_t01_args->astIngDetObj1[j].x+g_t01_args->astIngDetObj1[j].width;
+    //            unsigned int y6 = g_t01_args->astIngDetObj1[j].y;
+    //            unsigned int x7 = g_t01_args->astIngDetObj1[j].x;
+    //            unsigned int y7 = g_t01_args->astIngDetObj1[j].y+g_t01_args->astIngDetObj1[j].height;
+    //            unsigned int x8 = g_t01_args->astIngDetObj1[j].x+g_t01_args->astIngDetObj1[j].width;
+    //            unsigned int y8 = g_t01_args->astIngDetObj1[j].y+g_t01_args->astIngDetObj1[j].height;
+    //            unsigned int original_area2 = g_t01_args->astIngDetObj1[j].width*g_t01_args->astIngDetObj1[j].height;
 
-		md_context = IHwDet_Request_MD(user_0_md_channel, &desc);
+    //            if ((x1 >= x5 && x1 <= x8 && y1 >= y5 && y1 <= y8) 
+    //                || (x2 >= x5 && x2 <= x8 && y2 >= y5 && y2 <= y8)
+    //                || (x3 >= x5 && x3 <= x8 && y3 >= y5 && y3 <= y8)
+    //                || (x4 >= x5 && x4 <= x8 && y4 >= y5 && y4 <= y8)) /*两个矩形重叠*/
+    //            {
+    //                //WRN("overlap\n");
+    //                int overlap_width = x1-g_t01_args->astIngDetObj1[j].x;
+    //                int overlap_height = y1-g_t01_args->astIngDetObj1[j].y;
+    //                int overlap_area = overlap_width*overlap_height;
+    //                
+    //                if (g_t01_args->astIngDetObj1[i].type > g_t01_args->astIngDetObj1[j].type)
+    //                {
+    //                    memcpy(&pstObj->obj[idx], &g_t01_args->astIngDetObj1[j], sizeof(IngDetObject));
+    //                }
+    //                g_t01_args->astIngDetObj1[j].life = 0xff;
+    //            }
+    //        }
+    //        idx++;
+    //    }
+    //}
 
-		if (md_context) {
-			sprintf(log_buf, "\n Frame %d, objects %d\n", desc.frame, desc.objnum);
-			fwrite(log_buf, 1, strlen(log_buf), fp);
+    //pstObj->valid_obj_num = idx;
 
-			for (i = 0; i < desc.objnum; i++) {
-				IngDetObject *obj;
+    DBG("valid_obj_num: %d\n", pstObj->valid_obj_num);
+    for (i = 0; i < pstObj->valid_obj_num; i++)
+    {
+        DBG("i: %d, id: %d, type: %d, xywh[%d %d %d %d]strength: %f, life: %02x\n", i, pstObj->obj[i].id, pstObj->obj[i].type, 
+            pstObj->obj[i].x, pstObj->obj[i].y, pstObj->obj[i].width, pstObj->obj[i].height, pstObj->obj[i].strength, pstObj->obj[i].life);
+    }
 
-				obj = IHwDet_Get_Object(md_context, i);
-				if(!obj){
-					DBG("ERROR: failed to parse Object of user 0!\n");
-					break;
-				}
-
-				 /*osd_render(obj->type, obj->x, obj->y, */
-						 /*obj->width, obj->height, obj->tilt, */
-						 /*obj->yaw, desc.ts); */
-
-				sprintf(log_buf, "\t OBJECT:\n\t\tid:%d\n\t\t type:%d\n\t\t x:%d\n"
-					"\t\t y:%d\n\t\t width:%d\n\t\t height:%d\n"
-					"\t\t yaw:%d\n\t\t tilt:%d\n\t\t strength:%f\n"
-					"\t\t parents:[(%d, %d), (%d, %d), (%d, %d), (%d, %d), (%d, %d)]\n",
-					obj->id, obj->type, obj->x, obj->y, obj->width,
-					obj->height, obj->yaw, obj->tilt, obj->strength,
-					obj->parents[0].type, obj->parents[0].offset,
-					obj->parents[1].type, obj->parents[1].offset,
-					obj->parents[2].type, obj->parents[2].offset,
-					obj->parents[3].type, obj->parents[3].offset,
-					obj->parents[4].type, obj->parents[4].offset);
-				fwrite(log_buf, 1, strlen(log_buf), fp);
-			}
-
-			frame_cnt++;
-
-			if (!(frame_cnt % (SENSOR_FPS * 5))) {
-				DBG("USER 0: detection frame count = [%d]\n", frame_cnt);
-			}
-
-			 /*osd_render_cls(); */
-			IHwDet_Release_MD(user_0_md_channel, md_context);
-		}
-	}
-
-	fclose(fp);
-
-	return NULL;
+    return 0;
 }
 
-static void *user_thread_1(void *data)
+static void* t01_user_thread_0(void *data)
 {
-	int i;
-	int frame_cnt = 0;
+    prctl(PR_SET_NAME, __FUNCTION__);
+    
+    int ret = -1;
+    //int i = 0;
+    md_context_t md_context = 0;
+    IngDetDesc desc;
+    memset(&desc, 0, sizeof(desc));
+    
+    g_t01_args->md_channel = IHwDet_Create_Channel(MD_NOBLOCK);
+    CHECK(g_t01_args->md_channel != 0, NULL, "Error with: %#x\n", g_t01_args->md_channel);
 
-	prctl(PR_SET_NAME, "user_thread_1");
+    ret = IHwDet_Enable_Tracking(g_t01_args->md_channel, TRACKING_TYPE_FACE, DEFAULT_STRENGTH_FILTER);
+    CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
 
-	while (1) {
-		int md_context = 0;
-		IngDetDesc desc;
+    while (g_t01_args->running) 
+    {
+        memset(&desc, 0, sizeof(desc));
+        memset(&g_t01_args->stHwDetObj, 0, sizeof(g_t01_args->stHwDetObj));
+        md_context = IHwDet_Request_MD(g_t01_args->md_channel, &desc);
+        if (md_context) 
+        {
+            pthread_mutex_lock(&g_t01_args->mutex);
+            
+            memcpy(&g_t01_args->stHwDetObj.desc, &desc, sizeof(desc));
+            g_t01_args->stHwDetObj.usrPrivateCount = t01_transferPrivateCount(desc._private);
+            
+            ret = t01_process_result(md_context, &g_t01_args->stHwDetObj);
+            CHECK(ret == 0, NULL, "Error with %#x.\n", ret);
+            
+            ret = IHwDet_Release_MD(g_t01_args->md_channel, md_context);
+            CHECK(ret == 0, NULL, "Error with %#x.\n", ret);
+            
+            pthread_mutex_unlock(&g_t01_args->mutex);
+        }
+        
+        usleep(10*1000);
+    }
+    
+    ret = IHwDet_Disable_Tracking(g_t01_args->md_channel);
+    CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
 
-		if (stop == 1)
-			break;
+    ret = IHwDet_Destroy_Channel(g_t01_args->md_channel);
+    CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
 
-		md_context = IHwDet_Request_MD(user_1_md_channel, &desc);
-
-		if (md_context) {
-			for (i = 0; i < desc.objnum; i++) {
-				IngDetObject *obj;
-
-				obj = IHwDet_Get_Object(md_context, i);
-				if(!obj){
-					DBG("ERROR: failed to parse Object of user 1!\n");
-					break;
-				}
-			}
-
-			frame_cnt++;
-
-			if (!(frame_cnt % (SENSOR_FPS * 5))) {
-				DBG("USER 1: detection frame count = [%d]\n", frame_cnt);
-			}
-
-			IHwDet_Release_MD(user_1_md_channel, md_context);
-		} else {
-			usleep(1000000 / SENSOR_FPS);
-		}
-	}
-
-	return NULL;
+    return NULL;
 }
 
-static void *user_thread_2(void *data)
+static void* t01_user_thread_1(void *data)
 {
-	int i;
-	char *user_2_log_file = (char *)"user_2.log";
-	char log_buf[1024];
+    prctl(PR_SET_NAME, __FUNCTION__);
 
-	prctl(PR_SET_NAME, "user_thread_2");
+    int ret = -1;
+    //int i = 0;
+    md_context_t md_context = 0;
+    IngDetDesc_T desc;
+    memset(&desc, 0, sizeof(desc));
 
-	FILE *fp = fopen(user_2_log_file, "a");
-	if (!fp) {
-		DBG("Can't create or open file [%s]\n", user_2_log_file);
-		return NULL;
-	}
-	DBG("USER 2 PROCESS: store result to [%s]\n", user_2_log_file);
+    g_t01_args->md_channel = IHwDet_Create_Channel_T(MD_NOBLOCK);
+    CHECK(g_t01_args->md_channel != 0, NULL, "Error with: %#x\n", g_t01_args->md_channel);
 
-	while (1) {
-		int md_context = 0;
-		IngDetDesc_T desc_T;
+    //ret = IHwDet_Enable_Tracking(g_t01_args->md_channel, TRACKING_TYPE_FACE, DEFAULT_STRENGTH_FILTER);
+    //CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
 
-		if (stop == 1)
-			break;
+    while (g_t01_args->running) 
+    {
+        memset(&desc, 0, sizeof(desc));
+        memset(&g_t01_args->stHwDetObj, 0, sizeof(g_t01_args->stHwDetObj));
+        md_context = IHwDet_Request_MD_T(g_t01_args->md_channel, &desc);
+        if (md_context) 
+        {
+            pthread_mutex_lock(&g_t01_args->mutex);
+            
+            memcpy(&g_t01_args->stHwDetObj.desc_T, &desc, sizeof(desc));
+            g_t01_args->stHwDetObj.usrPrivateCount = t01_transferPrivateCount(desc._private);
 
-		md_context = IHwDet_Request_MD_T(user_2_md_channel, &desc_T);
+            ret = t01_process_result_T(md_context, &g_t01_args->stHwDetObj);
+            CHECK(ret == 0, NULL, "Error with %#x.\n", ret);
 
-		if (md_context) {
-			sprintf(log_buf, "\n Frame %d, targets %d\n", desc_T.frame, desc_T.tgtnum);
-			fwrite(log_buf, 1, strlen(log_buf), fp);
+            ret = IHwDet_Release_MD_T(g_t01_args->md_channel, md_context);
+            CHECK(ret == 0, NULL, "Error with %#x.\n", ret);
+            
+            pthread_mutex_unlock(&g_t01_args->mutex);
+        }
 
-			for (i = 0; i < desc_T.tgtnum; i++) {
-				IngTarget_T *target = IHwDet_Get_Target(md_context, i);
-				if (target) {
-					osd_render(OBJ_TYPE_PERSON, target->x, target->y,
-					           target->width, target->height, target->tilt,
-					           target->yaw, desc_T.ts);
+        usleep(10*1000);
+    }
 
-					sprintf(log_buf, "\t Target %d\n\t id:%d\n\t type:%d\n"
-						"\t x:%d\n\t y:%d\n\t width:%d\n\t height:%d\n"
-						"\t yaw:%d\n\t tilt:%d\n\t strength:%f\n", i, target->id,
-						target->type, target->x, target->y, target->width,
-						target->height, target->yaw, target->tilt, target->strength);
-					fwrite(log_buf, 1, strlen(log_buf), fp);
+    ret = IHwDet_Disable_Tracking(g_t01_args->md_channel);
+    CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
 
-					if (IHwDet_Target_Have_Face(target)) {
-						IngDetObject *obj_face = IHwDet_Target_Get_Object(target, OBJ_TYPE_FACE);
-						if (!obj_face) {
-							DBG("ERROR: failed to get face of target!\n");
-							continue;
-						}
-						osd_render(OBJ_TYPE_FACE, obj_face->x, obj_face->y,
-						          obj_face->width, obj_face->height, obj_face->tilt,
-						          obj_face->yaw, desc_T.ts);
+    ret = IHwDet_Destroy_Channel_T(g_t01_args->md_channel);
+    CHECK(ret == 0, NULL, "Error with: %#x\n", ret);
 
-						sprintf(log_buf, "\t\t FACE:\n\t\t\tid:%d\n\t\t\t type:%d\n\t\t\t x:%d\n"
-							"\t\t\t y:%d\n\t\t\t width:%d\n\t\t\t height:%d\n"
-							"\t\t\t yaw:%d\n\t\t\t tilt:%d\n\t\t\t strength:%f\n", obj_face->id,
-							obj_face->type, obj_face->x, obj_face->y, obj_face->width,
-							obj_face->height, obj_face->yaw, obj_face->tilt, obj_face->strength);
-						fwrite(log_buf, 1, strlen(log_buf), fp);
-					}
-
-					if (IHwDet_Target_Have_HeadAndShoulder(target)) {
-						IngDetObject *obj_hs = IHwDet_Target_Get_Object(target, OBJ_TYPE_HEAD_AND_SHOULDER);
-						if (!obj_hs) {
-							DBG("ERROR: failed to get head and shoulder of target!\n");
-							continue;
-						}
-						sprintf(log_buf, "\t\t HS:\n\t\t\tid:%d\n\t\t\t type:%d\n\t\t\t x:%d\n"
-							"\t\t\t y:%d\n\t\t\t width:%d\n\t\t\t height:%d\n"
-							"\t\t\t yaw:%d\n\t\t\t tilt:%d\n\t\t\t strength:%f\n", obj_hs->id,
-							obj_hs->type, obj_hs->x, obj_hs->y, obj_hs->width,
-							obj_hs->height, obj_hs->yaw, obj_hs->tilt, obj_hs->strength);
-						fwrite(log_buf, 1, strlen(log_buf), fp);
-					}
-
-					if (IHwDet_Target_Have_Figure(target)) {
-						IngDetObject *obj_figure = IHwDet_Target_Get_Object(target, OBJ_TYPE_FIGURE);
-						if (!obj_figure) {
-							DBG("ERROR: failed to get figure of target!\n");
-							continue;
-						}
-						sprintf(log_buf, "\t\t HS:\n\t\t\tid:%d\n\t\t\t type:%d\n\t\t\t x:%d\n"
-							"\t\t\t y:%d\n\t\t\t width:%d\n\t\t\t height:%d\n"
-							"\t\t\t yaw:%d\n\t\t\t tilt:%d\n\t\t\t strength:%f\n", obj_figure->id,
-							obj_figure->type, obj_figure->x, obj_figure->y, obj_figure->width,
-							obj_figure->height, obj_figure->yaw, obj_figure->tilt, obj_figure->strength);
-						fwrite(log_buf, 1, strlen(log_buf), fp);
-					}
-				} else {
-					DBG("ERROR: failed to get target!\n");
-				}
-			}
-
-			osd_render_cls();
-
-			IHwDet_Release_MD_T(user_2_md_channel, md_context);
-		}
-	}
-
-	fclose(fp);
-
-	return NULL;
+    return NULL;
 }
 
-static void auto_deinit(void)
+int sal_t01_init()
 {
-	int ret = 0;
+    CHECK(NULL == g_t01_args, -1, "reinit error, please uninit first.\n");
 
-	ret = IHwDet_Stop();
-	if(ret != 0) {
-		DBG("IHwDet_Stop failed\n");
-		return;
-	}
+    int ret = -1;
+    g_t01_args = (sal_t01_args*)malloc(sizeof(sal_t01_args));
+    CHECK(NULL != g_t01_args, -1, "malloc %d bytes failed.\n", sizeof(sal_t01_args));
 
-	ret = IHwDet_DeInit();
-	if(ret != 0) {
-		DBG("IHwDet_DeInit failed\n");
-		return;
-	}
+    memset(g_t01_args, 0, sizeof(sal_t01_args));
+    pthread_mutex_init(&g_t01_args->mutex, NULL);
+
+    ret = t01_ioattr_init(&g_t01_args->ioattr, 1920, 1080, 30);
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    ret = IHwDet_Init(&g_t01_args->ioattr);
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+
+    ret = IHwDet_Start(META_DATA_OBJECT, THUMBNAILS_ENABLE);
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    ret = IHwDet_Skip_Frame_Count(0);
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    //ret = IHwDet_Time_Sync(1, 1);
+    //CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    g_t01_args->running = 1;
+    ret = pthread_create(&g_t01_args->pid, NULL, t01_user_thread_0, NULL);
+    //ret = pthread_create(&g_t01_args->pid, NULL, t01_user_thread_1, NULL);
+    CHECK(ret == 0, -1, "Error with %s.\n", strerror(errno));
+
+    return 0;
 }
 
-static void signal_handler(int signal)
+int sal_t01_exit()
 {
-	switch (signal) {
-	case SIGINT:
-	case SIGTSTP:
-	case SIGKILL:
-	case SIGTERM:
-	case SIGSEGV:
-		auto_deinit();
-		exit(0);
-		break;
-	}
+    CHECK(NULL != g_t01_args, HI_FAILURE, "module not inited.\n");
+    
+    int ret = -1;
+    
+    //IHwDet_Set_Channel_Block(g_t01_args->md_channel, MD_NOBLOCK);
+    
+    if (g_t01_args->running)
+    {
+        g_t01_args->running = 0;
+        pthread_join(g_t01_args->pid, NULL);
+    }
+
+    ret = IHwDet_Stop();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    ret = IHwDet_DeInit();
+    CHECK(ret == 0, -1, "Error with: %#x\n", ret);
+    
+    free(g_t01_args);
+    g_t01_args = NULL;
+    
+    DBG("done.\n");
+    return 0;
 }
 
-static void signal_init(void)
+int sal_t01_HwDetObjGet(HwDetObj* pstHwDetObj)
 {
-	signal(SIGINT, signal_handler);
-	signal(SIGTSTP, signal_handler);
-	signal(SIGKILL, signal_handler);
-	signal(SIGTERM, signal_handler);
-	signal(SIGSEGV, signal_handler);
+    CHECK(NULL != g_t01_args, HI_FAILURE, "module not inited.\n");
+    CHECK(NULL != pstHwDetObj, HI_FAILURE, "invalid parameter with: %#x\n", pstHwDetObj);
+    
+    pthread_mutex_lock(&g_t01_args->mutex);
+    
+    memcpy(pstHwDetObj, &g_t01_args->stHwDetObj, sizeof(g_t01_args->stHwDetObj));
+    
+    pthread_mutex_unlock(&g_t01_args->mutex);
+    return 0;
 }
-
-int __main(void)
-{
-	int ret = 0;
-
-	//ret = rtsp_server_start();
-	//if (ret) {
-	//	DBG("rtsp_server_start failed\n");
-	//	return -1;
-	//}
-
-	DBG("IHwDet_Init ...\n");
-	ioattr_init();
-	ret = IHwDet_Init(&g_ioattr);
-	if(ret != 0) {
-		DBG("IHwDet_Init failed\n");
-		return -1;
-	}
-	DBG("IHwDet_Init ... OK!\n");
-
-	DBG("IHwDet_Start ...\n");
-	ret = IHwDet_Start(META_DATA_OBJECT, THUMBNAILS_ENABLE);
-	if(ret != 0) {
-		DBG("IHwDet_Start failed\n");
-		return -1;
-	}
-	DBG("IHwDet_Start ... OK!\n");
-
-	/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*\
-	 + create test for user 0 in block mode (NORMAL Channel)
-	\*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-	{
-		DBG("IHwDet_Create_Channel for user 0 ...\n");
-		user_0_md_channel = IHwDet_Create_Channel(MD_BLOCK);
-		if (!user_0_md_channel) {
-			DBG("IHwDet_Create_Channel for user 0 failed\n");
-			return -1;
-		}
-		DBG("IHwDet_Create_Channel for user 0 ... OK!\n");
-
-		DBG("IHwDet_Enable_Tracking for user 0 ...\n");
-		IHwDet_Enable_Tracking(user_0_md_channel, TRACKING_TYPE_UPPER_BODY, DEFAULT_STRENGTH_FILTER);
-		DBG("IHwDet_Enable_Tracking for user 0 ... OK!\n");
-
-		DBG("Create process thread for user 0 ...\n");
-		ret = pthread_create(&tid_user_0, NULL, user_thread_0, NULL);
-		if (ret < 0) {
-			DBG("create thread for user 0 error!\n");
-			return -1;
-		}
-		DBG("Create process thread for user 0 ... OK\n");
-	}
-
-	/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*\
-	 + create test for user 1 in noblock mode (NORMAL Channel)
-	\*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-	{
-		DBG("IHwDet_Create_Channel for user 1 ...\n");
-		user_1_md_channel = IHwDet_Create_Channel(MD_NOBLOCK);
-		if (!user_1_md_channel) {
-			DBG("IHwDet_Create_Channel for user 1 failed\n");
-			return -1;
-		}
-		DBG("IHwDet_Create_Channel for user 1 ... OK!\n");
-
-		DBG("Create process thread for user 1 ...\n");
-		ret = pthread_create(&tid_user_1, NULL, user_thread_1, NULL);
-		if (ret < 0) {
-			DBG("create thread for user 1 error!\n");
-			return -1;
-		}
-		DBG("Create process thread for user 1 ... OK\n");
-	}
-
-	/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*\
-	 + create test for user 2 in block mode (T Channel)
-	\*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-	{
-		DBG("IHwDet_Create_Channel for user 2 ...\n");
-		user_2_md_channel = IHwDet_Create_Channel_T(MD_BLOCK);
-		if (!user_2_md_channel) {
-			DBG("IHwDet_Create_Channel for user 2 failed\n");
-			return -1;
-		}
-		DBG("IHwDet_Create_Channel for user 2 ... OK!\n");
-
-		DBG("Create process thread for user 2 ...\n");
-		ret = pthread_create(&tid_user_2, NULL, user_thread_2, NULL);
-		if (ret < 0) {
-			DBG("create thread for user 2 error!\n");
-			return -1;
-		}
-		DBG("Create process thread for user 2 ... OK\n");
-	}
-
-	/* set signal handler */
-	signal_init();
-
-	while (stop == 0)
-		sleep(1);
-
-	/*-----------------------------------------------------------*\
-	 - finish test for user 0 in block mode (NORMAL Channel)
-	\*-----------------------------------------------------------*/
-	{
-		DBG("IHwDet_Set_Channel_Block as MD_NOBLOCK for user 0 ...\n");
-		IHwDet_Set_Channel_Block(user_0_md_channel, MD_NOBLOCK);
-		DBG("IHwDet_Set_Channel_Block as MD_NOBLOCK for user 0 ... OK\n");
-
-		DBG("Wait user 0 thread finished ...\n");
-		pthread_join(tid_user_0, NULL);
-		DBG("Wait user 0 thread finished ... OK\n");
-
-		DBG("IHwDet_Destroy_Channel for user 0 ...\n");
-		ret = IHwDet_Destroy_Channel(user_0_md_channel);
-		if (ret) {
-			DBG("IHwDet_Destory_Channel for user 0 failed\n");
-			return -1;
-		}
-		DBG("IHwDet_Destroy_Channel for user 0 ... OK!\n");
-	}
-
-	/*-----------------------------------------------------------*\
-	 - finish test for user 1 in noblock mode (NORMAL Channel)
-	\*-----------------------------------------------------------*/
-	{
-		DBG("Wait user 1 thread finished ...\n");
-		pthread_join(tid_user_1, NULL);
-		DBG("Wait user 1 thread finished ... OK\n");
-
-		DBG("IHwDet_Destroy_Channel for user 1 ...\n");
-		ret = IHwDet_Destroy_Channel(user_1_md_channel);
-		if (ret) {
-			DBG("IHwDet_Destory_Channel for user 1 failed\n");
-			return -1;
-		}
-		DBG("IHwDet_Destroy_Channel for user 1 ... OK!\n");
-	}
-
-	/*-----------------------------------------------------------*\
-	 - finish test for user 2 in block mode (T Channel)
-	\*-----------------------------------------------------------*/
-	{
-		DBG("IHwDet_Set_Channel_Block as MD_NOBLOCK for user 2 ...\n");
-		IHwDet_Set_Channel_Block_T(user_2_md_channel, MD_NOBLOCK);
-		DBG("IHwDet_Set_Channel_Block as MD_NOBLOCK for user 2 ... OK\n");
-
-		DBG("Wait user 2 thread finished ...\n");
-		pthread_join(tid_user_2, NULL);
-		DBG("Wait user 2 thread finished ... OK\n");
-
-		DBG("IHwDet_Destroy_Channel for user 2 ...\n");
-		ret = IHwDet_Destroy_Channel_T(user_2_md_channel);
-		if (ret) {
-			DBG("IHwDet_Destory_Channel for user 2 failed\n");
-			return -1;
-		}
-		DBG("IHwDet_Destroy_Channel for user 2 ... OK!\n");
-	}
-
-	DBG("IHwDet_Stop ...\n");
-	ret = IHwDet_Stop();
-	if(ret != 0) {
-		DBG("IHwDet_Stop failed\n");
-		return -1;
-	}
-	DBG("IHwDet_Stop ... OK!\n");
-
-	DBG("IHwDet_DeInit ...\n");
-	ret = IHwDet_DeInit();
-	if(ret != 0) {
-		DBG("IHwDet_DeInit failed\n");
-		return -1;
-	}
-	DBG("IHwDet_DeInit ... OK!\n");
-
-	return 0;
-}
-
-
-//typedef struct sal_t01_args
-//{
-//    struct timeval current;
-//    int vpss_chn;
-//
-//    int running;
-//    pthread_t pid;
-//    pthread_mutex_t mutex;
-//}sal_t01_args;
-//
-//static sal_t01_args* g_t01_args = NULL;
-//
-//
-//
-//static void* t01_proc(void* args)
-//{
-//    prctl(PR_SET_NAME, __FUNCTION__);
-//
-//    int s32Ret = -1;
-//    VIDEO_FRAME_INFO_S stFrame;
-//    memset(&stFrame, 0, sizeof(stFrame));
-//
-//    VI_CHN ViChn = 0;
-//    HI_U32 u32Depth = 0;
-//
-//    s32Ret = HI_MPI_VI_GetFrameDepth(ViChn, &u32Depth);
-//    CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-//
-//    if (u32Depth < 1)
-//    {
-//        u32Depth = 1;
-//        DBG("vi_chn: %d, u32Depth: %u\n", ViChn, u32Depth);
-//    }
-//
-//    s32Ret = HI_MPI_VI_SetFrameDepth(ViChn, u32Depth);
-//    CHECK(s32Ret == HI_SUCCESS, NULL, "Error with %#x.\n", s32Ret);
-//    
-//    while (g_t01_args->running)
-//    {
-//        util_time_abs(&g_t01_args->current);
-//        
-//        
-//        
-//        break;
-//    }
-//
-//    return NULL;
-//}
-//
-//static int t01_init_dev()
-//{
-//    int ret = -1;
-//    IHwDetAttr ioattr;
-//    memset(&ioattr, 0, sizeof(ioattr));
-//    
-//    /* input */
-//    ioattr.input.interface = INPUT_INTERFACE_DVP_SONY;
-//    ioattr.input.data_type = INPUT_DVP_DATA_TYPE_RAW12;
-//    ioattr.input.image_width = 1920;
-//    ioattr.input.image_height = 1080;
-//    ioattr.input.raw_rggb = 0;
-//    ioattr.input.raw_align = 1;
-//    ioattr.input.blanking.hfb_num = 11;
-//    ioattr.input.blanking.vic_input_vpara3 = 17;
-//    ioattr.input.config.dvp_bus_select = 0;
-//    ioattr.input.fps = 25; //SENSOR_FPS;
-//    ioattr.input.mclk_enable = 0;
-//
-//    /* output only for MIPI bypass mode */
-//    ret = IHwDet_Init(&ioattr);
-//    CHECK(ret == 0, -1, "Error with %#x.\n", ret);
-//    
-//    DBG("IHwDet_Init ... OK!\n");
-//
-//    DBG("IHwDet_Start ...\n");
-//    
-//    ret = IHwDet_Start(META_DATA_OBJECT, THUMBNAILS_ENABLE);
-//    CHECK(ret == 0, -1, "Error with %#x.\n", ret);
-//    
-//    DBG("IHwDet_Start ... OK!\n");
-//    
-//    return 0;
-//}
-//
-//int sal_t01_init()
-//{
-//    CHECK(NULL == g_t01_args, -1, "reinit error, please uninit first.\n");
-//
-//    int ret = -1;
-//
-//    g_t01_args = (sal_t01_args*)malloc(sizeof(sal_t01_args));
-//    CHECK(NULL != g_t01_args, -1, "malloc %d bytes failed.\n", sizeof(sal_t01_args));
-//
-//    memset(g_t01_args, 0, sizeof(sal_t01_args));
-//    pthread_mutex_init(&g_t01_args->mutex, NULL);
-//    
-//    g_t01_args->vpss_chn = 1;
-//
-//    g_t01_args->running = 1;
-//    ret = pthread_create(&g_t01_args->pid, NULL, dr_proc1, NULL);
-//    CHECK(ret == 0, -1, "Error with %s.\n", strerror(errno));
-//
-//    return 0;
-//}
-//
-//int sal_t01_exit()
-//{
-//
-//
-//    return 0;
-//}
 
 
